@@ -53,8 +53,8 @@ Master-Brain/
 │   └── IQ_modulation/
 │       ├── iq_manim_llrf.py      # analógico × digital (DDC)
 │       └── amplitude_fase_iq.py  # como extrair amplitude e fase de I/Q
-├── media/                     # vídeos gerados pelo Manim (ignorado pelo git)
-└── venv/                      # ambiente virtual Python (ignorado pelo git)
+├── media/
+└── venv/
 ```
 
 ## Requisitos
