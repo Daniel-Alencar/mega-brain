@@ -253,9 +253,10 @@ class IQDemodulationComparison(Scene):
                                             color=COR_Q, radius=0.05))
 
         self.play(Create(eixos), FadeIn(rotulos), run_time=1.2)
-        self.play(GrowArrow(Arrow(o, ponta_pos(), buff=0, color=COR_REAL)), run_time=0.6)
+        seta_inicial = seta(o, ponta_pos(), COR_REAL, 7)
+        self.play(GrowArrow(seta_inicial), run_time=0.6)
+        self.remove(seta_inicial)
         self.add(fasor, ponta)
-        self.remove(*[m for m in self.mobjects if isinstance(m, Arrow)])
         self.play(FadeIn(rot_a), Create(arco), FadeIn(rot_phi))
         leg = self.legenda("Um sinal de RF é um fasor: amplitude A(t) e fase φ(t)")
         self.play(Create(proj_i), Create(proj_q), Create(seg_i), Create(seg_q))
@@ -448,7 +449,7 @@ class IQDemodulationComparison(Scene):
 
     # ================================================================= CENA 3a
     def cena_ddc_esquema(self):
-        self.titulo_cena("3 · Arquitetura digital IF + DDC (Fig. 5c), padrão em LLRF modernos")
+        self.titulo_cena("3 · Arquitetura digital: IF + DDC (Fig. 5c)")
         y0 = 1.85
         rf = bloco("RF", 0.9, 0.6, COR_REAL, 22).move_to(P(-6.2, y0))
         mx = mixer().move_to(P(-4.7, y0))
@@ -481,17 +482,17 @@ class IQDemodulationComparison(Scene):
         wq = VGroup(fio([no.get_center(), P(1.3, yb), m_q.get_left()], WHITE, 3),
                     fio([m_q.get_right(), fir_q.get_left()], COR_Q, 3),
                     fio([fir_q.get_right(), o_q.get_left() + LEFT * 0.1], COR_Q, 3))
-        n1 = Text("① 1 mixer", font_size=18, color=GREY_A).next_to(mx, UP, buff=0.2)
+        n1 = Text("(1) 1 mixer", font_size=18, color=GREY_A).next_to(mx, UP, buff=0.2)
         n_if = Text("IF = 20 MHz", font_size=16, color=COR_REAL).next_to(w2, DOWN, buff=0.12)
-        n2 = Text("② 1 ADC", font_size=18, color=GREY_A).next_to(adc, UP, buff=0.2)
-        n3 = Text("③ processamento numérico", font_size=18, color=GREY_A).next_to(chip, UP, buff=0.1)
+        n2 = Text("(2) 1 ADC", font_size=18, color=GREY_A).next_to(adc, UP, buff=0.2)
+        n3 = Text("(3) processamento numérico", font_size=18, color=GREY_A).next_to(chip, UP, buff=0.1)
 
-        leg = self.legenda("① Um ÚNICO mixer desce a portadora para a IF (20 MHz)")
+        leg = self.legenda("1) Um ÚNICO mixer desce a portadora para a IF (20 MHz)")
         self.play(FadeIn(rf), Create(w1), FadeIn(mx), FadeIn(lo), Create(w_lo), FadeIn(n1))
         self.play(Create(w2), FadeIn(n_if), FadeIn(aa), Create(w3))
-        leg = self.legenda("② Um ÚNICO ADC digitaliza a IF: um só caminho analógico", leg)
+        leg = self.legenda("2) Um ÚNICO ADC digitaliza a IF: um só caminho analógico", leg)
         self.play(FadeIn(adc), FadeIn(n2))
-        leg = self.legenda("③ I e Q são separados dentro da FPGA, por aritmética", leg)
+        leg = self.legenda("3) I e Q são separados dentro da FPGA, por aritmética", leg)
         self.play(Create(chip), FadeIn(rot_chip), FadeIn(n3), Create(w4), FadeIn(no))
         self.play(Create(wi), Create(wq), FadeIn(m_i), FadeIn(m_q), FadeIn(nco_i), FadeIn(nco_q),
                   FadeIn(fir_i), FadeIn(fir_q), Write(o_i), Write(o_q), run_time=1.6)
@@ -649,7 +650,7 @@ class IQDemodulationComparison(Scene):
             self.play(FadeIn(cab), Create(eixos), FadeIn(rot), Create(circ), run_time=1)
             self.play(Create(medida), FadeIn(itens, shift=UP * 0.15), run_time=1.5)
         nota = Text(f"(erros analógicos exagerados: Δθ = {DTH_EXAGERADO:.0f}°, ε = {EPS_EXAGERADO:.0%})",
-                    font_size=16, color=COR_EIXO).next_to(grupos[0][0], LEFT, buff=-1.2).shift(UP * 2.3)
+                    font_size=16, color=COR_EIXO).to_corner(UR, buff=0.45)
         self.play(FadeIn(nota))
         final = Text("Por isso LLRFs modernos, como o do Sirius, fazem a detecção I/Q no digital",
                      font_size=24, color=WHITE).to_edge(DOWN, buff=0.3)
