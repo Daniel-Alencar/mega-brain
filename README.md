@@ -72,6 +72,49 @@ Cena `DigitalDownConversion` em
 [src/Digital_Down_Conversion/digital_down_conversion.py](src/Digital_Down_Conversion/digital_down_conversion.py).
 Esta animação **exige LaTeX**.
 
+## IQ_sampling: amplitude e fase com um único ADC
+
+Animação do conteúdo de
+[IQ sampling.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md):
+
+1. **Polar × cartesiana.** `A·sin(ωt + φ0) = I·sin ωt + Q·cos ωt` e o fasor (I, Q).
+2. **O que o ADC mede.** Só a projeção vertical do fasor: uma amostra define uma
+   reta; duas amostras a 90° definem o ponto (I, Q).
+3. **f_s = 4·f_IF.** O fasor avança 90° por amostra e o ADC entrega Q, I, −Q, −I, …
+4. **Algoritmo de rotação.** Janela de 2 amostras e matrizes com 0 e ±1.
+5. **Generalização f_s = m·f_IF.** Cada amostra é uma faixa (± ruído); a incerteza
+   no cruzamento cresce com `1/|sin Δφ|`.
+6. **Limitações.** Offset DC gera ripple em f_IF; com f_s = 4·f_IF, as harmônicas
+   ímpares caem sobre a portadora (no espectro e no tempo).
+7. **Resumo.**
+
+Cena `IQSampling` em [src/IQ_sampling/iq_sampling.py](src/IQ_sampling/iq_sampling.py).
+Esta animação **exige LaTeX**.
+
+## Non_IQ_sampling: N amostras em M períodos
+
+Animação do conteúdo de
+[Non-IQ sampling.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md),
+com o exemplo N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°):
+
+1. **Motivação.** Harmônicas ímpares sobre f_IF no IQ sampling.
+2. **Conceito.** `f_s/f_IF = N/M` e N pontos distintos no círculo.
+3. **Mínimos quadrados.** Amostras com ruído, resíduos e a função de custo
+   diminuindo até o mínimo.
+4. **Por que fica simples.** A soma dos vetores `e^{j2φi}` fecha um polígono, então
+   `p12 = 0` e `p11 = p22 = N/2`.
+5. **Estimador final.** `I = (2/N)·Σ y·sin(iΔφ)`, `Q = (2/N)·Σ y·cos(iΔφ)` com
+   coeficientes de uma LUT.
+6. **Harmônicas espalhadas.** Com f_s = 4,5·f_IF nenhuma das 7 primeiras cai sobre
+   f_IF; as primeiras a cair são a (N−1)ª e a (N+1)ª.
+7. **Ruído e offset.** Nuvens de estimativas IQ × Non-IQ; o offset DC se cancela.
+8. **Latência.** Uma estimativa por amostra × uma a cada N amostras.
+9. **Resumo** em tabela.
+
+Cena `NonIQSampling` em
+[src/Non_IQ_sampling/non_iq_sampling.py](src/Non_IQ_sampling/non_iq_sampling.py).
+Esta animação **exige LaTeX**.
+
 ## Estrutura
 
 ```
@@ -80,8 +123,12 @@ Master-Brain/
 │   ├── IQ_modulation/
 │   │   ├── iq_manim_llrf.py      # analógico × digital (DDC)
 │   │   └── amplitude_fase_iq.py  # como extrair amplitude e fase de I/Q
-│   └── Digital_Down_Conversion/
-│       └── digital_down_conversion.py  # modulação IQ, NCO, CIC e DDC
+│   ├── Digital_Down_Conversion/
+│   │   └── digital_down_conversion.py  # modulação IQ, NCO, CIC e DDC
+│   ├── IQ_sampling/
+│   │   └── iq_sampling.py              # f_s = 4·f_IF e algoritmo de rotação
+│   └── Non_IQ_sampling/
+│       └── non_iq_sampling.py          # f_s/f_IF = N/M e mínimos quadrados
 ├── media/
 └── venv/
 ```
@@ -134,12 +181,24 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
     manim -pql src/Digital_Down_Conversion/digital_down_conversion.py DigitalDownConversion
 ```
 
+```bash
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
+    manim -pql src/IQ_sampling/iq_sampling.py IQSampling
+```
+
+```bash
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
+    manim -pql src/Non_IQ_sampling/non_iq_sampling.py NonIQSampling
+```
+
 O `-p` abre o vídeo assim que ele termina de renderizar. Os arquivos ficam em:
 
 ```
 media/videos/iq_manim_llrf/480p15/IQDemodulationComparison.mp4
 media/videos/amplitude_fase_iq/480p15/AmplitudeFaseIQ.mp4
 media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
+media/videos/iq_sampling/480p15/IQSampling.mp4
+media/videos/non_iq_sampling/480p15/NonIQSampling.mp4
 ```
 
 Para que serve o `LD_PRELOAD`, veja [Problemas comuns](#problemas-comuns).
