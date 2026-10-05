@@ -19,10 +19,14 @@ O repositório tem duas partes que andam juntas:
 | Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~3 min |
 | Detecção de amplitude e fase: Non-IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
 | Detecção de amplitude e fase: Digital Down Conversion | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
+| DDC: Decimador | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Decimador.md) | [decimador.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/decimador.py) | `Decimador` | ~2 min |
+| DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~2 min |
+| DDC: Filtro FIR | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20FIR.md) | [filtro_fir.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_fir.py) | `FiltroFIR` | ~2 min |
 
 Uma ordem natural de estudo é a da tabela: primeiro a malha LLRF como um todo,
 depois a cavidade e os filtros, e por fim as três técnicas de detecção de
-amplitude e fase.
+amplitude e fase. Os três últimos aprofundam blocos do DDC: o decimador e os
+filtros CIC e FIR.
 
 ## O que cada animação mostra
 
@@ -114,6 +118,41 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
    resposta sinc, droop e crescimento de bits.
 10. **DDC × IQ sampling clássico** e resumo.
 
+### Decimador
+
+1. **O que é decimar.** Manter 1 amostra a cada M, com M variando: `f_s' = f_s/M`.
+2. **As duas etapas.** FIR passa-baixa (anti-aliasing) seguido de ↓M.
+3. **Aliasing.** No espectro, o ruído em 0,3·f_s se dobra para 0,05·f_s após ↓4; no
+   tempo, as amostras mantidas desenham uma onda falsa. Com o FIR antes, o sinal passa intacto.
+4. **Downsampling.** Quais amostras ficam: `y[m] = x[m·M]`.
+5. **FPGAs.** Um multiplicador atende M contas, clock de 200 MHz × 50 MHz e menor consumo.
+6. **Polifásico.** A implementação ingênua desperdiça M − 1 saídas; os sub-filtros
+   E₀…E₃ com comutador fazem N/M multiplicações por amostra.
+
+### Filtro CIC
+
+Exemplo usado: atraso do comb D = 4.
+
+1. **Estrutura.** Integrador `I[n] = I[n−1] + x[n]` e comb `y[n] = I[n] − I[n−4]`.
+2. **Integrador.** Tabela e barras mostrando a soma de todo o histórico (`I[4] = x[4] + … + x[0]`)
+   e o overflow proposital.
+3. **Comb.** O x[0] se anula e sobra uma janela de 4 amostras, que desliza pela tabela.
+4. **Filtragem.** Janela sobre `+1 −1 +1 −1` (soma 0) e `+1 +1 +1 +1` (soma 4).
+5. **Média móvel.** Sinal ruidoso suavizado e |H(f)| com ganho 4 em DC e zeros em f_s/4 e f_s/2.
+6. **Com o decimador.** ↓4 entre integrador e comb: o comb, com atraso de 1 na taxa
+   lenta, subtrai 4 amostras rápidas.
+
+### Filtro FIR
+
+1. **A equação.** `y[n] = Σ h[k]·x[n−k]`, N taps e ordem N − 1.
+2. **Estrutura.** Linha de atrasos, multiplicadores e somadores, com as amostras
+   andando clock a clock e cada y[n] calculado.
+3. **Resposta ao impulso.** A do FIR dura N amostras; a de um IIR nunca zera.
+4. **Suavização.** Sinal ruidoso com N = 1, 5, 10 e 20 taps e o atraso (N − 1)/2.
+5. **Fase linear.** Um pulso retangular passa pelo FIR simétrico (só atrasa) e pelo IIR (deforma).
+6. **Custo.** Passa-baixa com 11, 31 e 101 taps: transição mais estreita exige mais multiplicadores.
+7. **FIR × IIR.** Equações e tabela comparativa.
+
 ## Estrutura
 
 `src/` espelha `docs/`: cada animação fica na pasta com o mesmo nome do assunto
@@ -124,7 +163,7 @@ Master-Brain/
 ├── docs/                                       # textos (.md) e figuras
 │   ├── Componentes de um sistema de RF/
 │   ├── Detecção de amplitude e fase em RF/
-│   │   ├── Digital Down Conversion/
+│   │   ├── Digital Down Conversion/            # DDC, Decimador, Filtro CIC, Filtro FIR
 │   │   ├── IQ sampling/
 │   │   └── Non-IQ sampling/
 │   ├── Filtros/
@@ -134,7 +173,10 @@ Master-Brain/
 │   │   └── componentes_sistema_rf.py
 │   ├── Detecção de amplitude e fase em RF/
 │   │   ├── Digital Down Conversion/
-│   │   │   └── digital_down_conversion.py
+│   │   │   ├── digital_down_conversion.py
+│   │   │   ├── decimador.py
+│   │   │   ├── filtro_cic.py
+│   │   │   └── filtro_fir.py
 │   │   ├── IQ sampling/
 │   │   │   └── iq_sampling.py
 │   │   └── Non-IQ sampling/
@@ -190,6 +232,9 @@ manim -pql "src/Filtros/filtros.py" Filtros
 manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling
 manim -pql "src/Detecção de amplitude e fase em RF/Non-IQ sampling/non_iq_sampling.py" NonIQSampling
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion
+manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/decimador.py" Decimador
+manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_cic.py" FiltroCIC
+manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_fir.py" FiltroFIR
 ```
 
 O `-p` abre o vídeo assim que ele termina de renderizar. O vídeo fica em
@@ -202,6 +247,9 @@ media/videos/filtros/480p15/Filtros.mp4
 media/videos/iq_sampling/480p15/IQSampling.mp4
 media/videos/non_iq_sampling/480p15/NonIQSampling.mp4
 media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
+media/videos/decimador/480p15/Decimador.mp4
+media/videos/filtro_cic/480p15/FiltroCIC.mp4
+media/videos/filtro_fir/480p15/FiltroFIR.mp4
 ```
 
 ### Qualidade de renderização
