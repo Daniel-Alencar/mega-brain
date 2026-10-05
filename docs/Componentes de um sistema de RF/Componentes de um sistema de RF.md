@@ -81,19 +81,19 @@ $v_{mix}(t) = v_{RF}(t) \cdot v_{LO}(t) = A(t) \cos(\omega_{RF} t + \phi(t)) \cd
 
 Aplicando a identidade trigonométrica do produto de dois cossenos, $\cos(a)\cos(b) = \frac{1}{2}[\cos(a - b) + \cos(a + b)]$:
 
-$v_{mix}(t) = \frac{1}{2} A(t) \cos\big( (\omega_{RF} - \omega_{LO})t + \phi(t) - \theta_{LO} \big) + \frac{1}{2} A(t) \cos\big( (\omega_{RF} + \omega_{LO})t + \phi(t) + \theta_{LO} \big) \text{[cite: 1]}$
+$v_{mix}(t) = \frac{1}{2} A(t) \cos\big( (\omega_{RF} - \omega_{LO})t + \phi(t) - \theta_{LO} \big) + \frac{1}{2} A(t) \cos\big( (\omega_{RF} + \omega_{LO})t + \phi(t) + \theta_{LO} \big)$
 
 Esta operação gera duas componentes espectrais bem definidas:
 
 1. **Componente de Soma (**$\omega_{RF} + \omega_{LO}$**):** Fica situada numa frequência muito elevada (em torno de $500\text{ MHz} + 480\text{ MHz} = 980\text{ MHz}$).
 2. **Componente de Diferença (**$\omega_{RF} - \omega_{LO}$**):** Fica situada exatamente na frequência pretendida:
     
-    $\omega_{IF} = \omega_{RF} - \omega_{LO} \implies 500\text{ MHz} - 480\text{ MHz} = 20\text{ MHz} \text{[cite: 1]}$
+    $\omega_{IF} = \omega_{RF} - \omega_{LO} \implies 500\text{ MHz} - 480\text{ MHz} = 20\text{ MHz}$
     
 
-O sinal passa de seguida pelo **filtro passa-baixo** ilustrado no diagrama da Figura 7, que suprime totalmente o termo a $980\text{ MHz}$. O sinal entregue à entrada do conversor analógico-digital (ADC) é unicamente:
+O sinal passa de seguida pelo **filtro passa-baixo**, que suprime totalmente o termo a $980\text{ MHz}$. O sinal entregue à entrada do conversor analógico-digital (ADC) é unicamente:
 
-$v_{IF}(t) = \frac{1}{2} A(t) \cos(\omega_{IF} t + \phi(t) - \theta_{LO}) \text{[cite: 1]}$
+$v_{IF}(t) = \frac{1}{2} A(t) \cos(\omega_{IF} t + \phi(t) - \theta_{LO})$
 
 > **Observação crucial:** Toda a dinâmica lenta de amplitude $A(t)$ e fase $\phi(t)$ da cavidade foi preservada de forma intacta, sofrendo apenas uma rotação angular estática constante ($\theta_{LO}$) e uma divisão de amplitude (o ganho de conversão $g_M$ do mixer).
 > 
@@ -150,18 +150,18 @@ A multiplicação gera duas raias espectrais distintas:
 
 1. **Banda Lateral Superior (Soma):**
     
-    $\omega_{RF} = \omega_{LO} + \omega_{IF} \implies 480\text{ MHz} + 20\text{ MHz} = \mathbf{500\text{ MHz}} \text{[cite: 1]}$
+    $\omega_{RF} = \omega_{LO} + \omega_{IF} \implies 480\text{ MHz} + 20\text{ MHz} = \mathbf{500\text{ MHz}}$
     
 2. **Banda Lateral Inferior (Diferença / Imagem Espúria):**
     
     $\omega_{esp} = \omega_{LO} - \omega_{IF} \implies 480\text{ MHz} - 20\text{ MHz} = 460\text{ MHz}$
     
 
-O sinal passa pelo **filtro passa-bandas** sintonizado em $500\text{ MHz}$ (ilustrado na Figura 7 logo após o mixer). Esse filtro rejeita o termo indesejado de $460\text{ MHz}$ e eventuais vazamentos do oscilador local em $480\text{ MHz}$.
+O sinal passa pelo **filtro passa-bandas** sintonizado em $500\text{ MHz}$. Esse filtro rejeita o termo indesejado de $460\text{ MHz}$ e eventuais vazamentos do oscilador local em $480\text{ MHz}$.
 
 O sinal resultante entregue aos pré-amplificadores é estritamente:
 
-$v_{RF}(t) = \frac{1}{2} A_{act}(t) \cos(\omega_{RF} t + \phi_{act}(t) + \theta_{LO}) \text{[cite: 1]}$
+$v_{RF}(t) = \frac{1}{2} A_{act}(t) \cos(\omega_{RF} t + \phi_{act}(t) + \theta_{LO})$
 
 Toda a modulação de amplitude $A_{act}(t)$ e fase $\phi_{act}(t)$ sintetizada na FPGA foi transladada para o canal de $500\text{ MHz}$, sofrendo apenas uma atenuação/ganho $g_M$ e uma rotação fixa de fase $\theta_M = \theta_{LO}$.
 
@@ -194,7 +194,7 @@ O *Up-Conversion* permite à FPGA e ao DAC trabalharem na banda intermediária d
 
 Tanto a **desmodulação** (extração de $I$ e $Q$) quanto a **modulação** (reconstrução a partir de $I$ e $Q$) acontecem **no domínio digital, dentro da FPGA**, imediatamente após o ADC e imediatamente antes do DAC.
 
-A Figura 7 mostra apenas a cadeia analógica de RF/IF. Para entender o fluxo completo, dividimos em duas etapas:
+Para entender o fluxo completo, dividimos em duas etapas:
 
 ### Onde o sinal é desmodulado
 
@@ -225,7 +225,7 @@ Com essa sincronização, a FPGA não precisa de multiplicadores senoidais compl
 O processo inverso ocorre na saída do controlador PI:
 
 - O algoritmo de controle na FPGA calcula as correções necessárias diretamente como dois números digitais: $I_{act}$ e $Q_{act}$.
-- Ainda **dentro da FPGA**, antes do bloco **DAC** da Figura 7, esses dois valores modulam digitalmente uma portadora em frequência intermediária através de um oscilador local digital (DDS/NCO):
+- Ainda **dentro da FPGA**, antes do bloco **DAC**, esses dois valores modulam digitalmente uma portadora em frequência intermediária através de um oscilador local digital (DDS/NCO):
     
     $V_{act}[n] = I_{act}[n]\cos(\omega_{IF} n T_s) - Q_{act}[n]\sin(\omega_{IF} n T_s)$
     

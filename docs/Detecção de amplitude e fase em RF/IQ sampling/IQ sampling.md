@@ -36,7 +36,7 @@ Nesta condição, o avanço de fase entre duas amostras consecutivas é precisam
 
 $\Delta\phi = \omega \cdot T_s = 2\pi f_{IF} \cdot \frac{1}{4 f_{IF}} = \frac{\pi}{2} = 90^\circ$ 
 
-Avaliando a Equação (3) em quatro instantes sucessivos ($t_0, t_1, t_2, t_3$):
+Avaliando a Equação em quatro instantes sucessivos ($t_0, t_1, t_2, t_3$):
 
 - Em $\omega t_0 = 0$: $y(t_0) = I \sin(0) + Q \cos(0) = \mathbf{Q}$
 - Em $\omega t_1 = \pi/2$: $y(t_1) = I \sin(\pi/2) + Q \cos(\pi/2) = \mathbf{I}$
@@ -57,7 +57,7 @@ Como os elementos dessa matriz são apenas **0**, **1** e **-1**, o hardware dig
 
 ### 4. Generalização para Múltiplos Inteiros
 
-Caso a razão seja outro número inteiro $m$ (com passo angular $\Delta\phi = \frac{2\pi}{m}$), duas amostras consecutivas $y_n$ e $y_{n+1}$ formam um sistema linear bidimensional resolvido pela Equação (9) do artigo:
+Caso a razão seja outro número inteiro $m$ (com passo angular $\Delta\phi = \frac{2\pi}{m}$), duas amostras consecutivas $y_n$ e $y_{n+1}$ formam um sistema linear bidimensional:
 
 $\begin{pmatrix} I \\ Q \end{pmatrix} = \frac{1}{\sin\Delta\phi} \begin{pmatrix} \cos(\phi + n\Delta\phi) & -\cos(\phi + (n+1)\Delta\phi) \\ -\sin(\phi + n\Delta\phi) & \sin(\phi + (n+1)\Delta\phi) \end{pmatrix} \begin{pmatrix} y_{n+1} \\ y_n \end{pmatrix}$
 

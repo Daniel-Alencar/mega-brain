@@ -53,7 +53,7 @@ Aqui ocorrem dois passos fundamentais de teoria de circuitos: **rebater a imped�
 
 ### O que significa rebater para o secundário?
 
-No circuito da figura anterior, a fonte do gerador e a impedância $Z_0$ estavam no enrolamento primário do transformador ideal de relação de espiras $1:n$.
+No circuito, a fonte do gerador e a impedância $Z_0$ estavam no enrolamento primário do transformador ideal de relação de espiras $1:n$.
 
 Num transformador ideal de relação $1:n$:
 
@@ -68,7 +68,7 @@ Por essa razão, ao eliminar o transformador e trazer tudo para o lado da cavida
 
 ### Análise do Nó Principal (Lei dos Nós de Kirchhoff)
 
-Observando a Figura 6, todos os ramos estão em paralelo sob a mesma tensão $v_C(t)$:
+Todos os ramos estão em paralelo sob a mesma tensão $v_C(t)$:
 
 - A corrente injetada pelo gerador de RF e pelo feixe entra no nó superior:
     
@@ -108,15 +108,13 @@ Usando a notação de ponto para as derivadas temporais ($\ddot{v}_C = \frac{d^2
 
 $\ddot{v}_C + \left( \frac{n^2 Z_0 + R}{n^2 R Z_0 C} \right) \dot{v}_C + \frac{1}{LC} v_C = \frac{1}{C}\dot{i}_C$
 
-*(Nota: Na equação 2.1 impressa no documento surge* $\frac{i_C}{C}$ *à direita por lapso de digitação do autor, mas a transformada de Laplace que ele escreve logo a seguir em 2.2 com o numerador em* $s/C$ *comprova exatamente esta dedução).*
-
 # Da análise no tempo para análise em frequência
 
-Para compreender a dedução detalhada passo a passo, analisemos o circuito da Figura 6 apresentado no texto.
+Para compreender a dedução detalhada passo a passo, analisemos o circuito apresentado no texto.
 
 ### Passo 1: Aplicação da Lei dos Nós de Kirchhoff (KCL)
 
-No circuito da Figura 6, todos os ramos estão em paralelo sob o mesmo nó de potencial com tensão $v_C(t)$ em relação à referência (terra).
+No circuito, todos os ramos estão em paralelo sob o mesmo nó de potencial com tensão $v_C(t)$ em relação à referência (terra).
 
 A corrente total de excitação que entra no nó superior é:
 
@@ -177,7 +175,7 @@ $\frac{d^2 v_C(t)}{dt^2} + \left( \frac{n^2 Z_0 + R}{n^2 R Z_0 C} \right) \frac{
 
 Adotando a notação clássica de ponto para as derivadas no tempo ($\ddot{v}_C = \frac{d^2 v_C}{dt^2}$, $\dot{v}_C = \frac{d v_C}{dt}$ e $\dot{i}_C = \frac{d i_C}{dt}$):
 
-$\ddot{v}_C + \dot{v}_C \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{v_C}{LC} = \frac{\dot{i}_C}{C} \quad \text{--- [Equação 2.1]}\text{[cite: 4]}$
+$\ddot{v}_C + \dot{v}_C \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{v_C}{LC} = \frac{\dot{i}_C}{C}$
 
 ### Passo 4: Transformada de Laplace
 
@@ -191,9 +189,9 @@ Coloca-se $V_C(s)$ em evidência no membro esquerdo:
 
 $V_C(s) \left[ s^2 + s \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{1}{LC} \right] = \frac{s}{C} I_C(s)$
 
-Isolando a razão $\frac{V_C(s)}{I_C(s)}$, obtém-se diretamente a equação (2.2):
+Isolando a razão $\frac{V_C(s)}{I_C(s)}$, obtém-se diretamente a equação:
 
-$\frac{V_C(s)}{I_C(s)} = \frac{s/C}{s^2 + s(n^2 Z_o + R)/n^2 R Z_o C + 1/LC} \quad \text{--- [Equação 2.2]}\text{[cite: 4]}$
+$\frac{V_C(s)}{I_C(s)} = \frac{s/C}{s^2 + s(n^2 Z_o + R)/n^2 R Z_o C + 1/LC}$
 
 Esta expressão é a função de transferência da impedância equivalente vista pela corrente de excitação, tendo a forma canónica de um filtro passa-banda de 2.ª ordem centrado na frequência de ressonância $\omega_0 = 1/\sqrt{LC}$.
 
@@ -216,17 +214,17 @@ Onde:
 
 Agora compare diretamente com a equação obtida para a cavidade:
 
-$\frac{V_C(s)}{I_C(s)} = \frac{\frac{1}{C} \cdot s}{s^2 + \left[\frac{n^2 Z_0 + R}{n^2 R Z_0 C}\right] s + \frac{1}{LC}} \text{[cite: 4]}$
+$\frac{V_C(s)}{I_C(s)} = \frac{\frac{1}{C} \cdot s}{s^2 + \left[\frac{n^2 Z_0 + R}{n^2 R Z_0 C}\right] s + \frac{1}{LC}}$
 
 As correspondências termo a termo são imediatas:
 
 1. **Termo constante no denominador:**
     
-    $\omega_0^2 = \frac{1}{LC} \implies \omega_0 = \frac{1}{\sqrt{LC}} \text{[cite: 1]}$
+    $\omega_0^2 = \frac{1}{LC} \implies \omega_0 = \frac{1}{\sqrt{LC}}$
     
 2. **Termo linear em** $s$ **no denominador (amortecimento / largura de banda):**
     
-    $2\omega_{1/2} = \frac{n^2 Z_0 + R}{n^2 R Z_0 C} \text{[cite: 1, 4]}$
+    $2\omega_{1/2} = \frac{n^2 Z_0 + R}{n^2 R Z_0 C}$
     
 3. **Numerador proporcional a** $s$**:**
     
