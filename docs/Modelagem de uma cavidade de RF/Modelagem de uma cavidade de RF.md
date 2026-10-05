@@ -110,7 +110,7 @@ $\ddot{v}_C + \left( \frac{n^2 Z_0 + R}{n^2 R Z_0 C} \right) \dot{v}_C + \frac{1
 
 # Da análise no tempo para análise em frequência
 
-Para compreender a dedução detalhada passo a passo, analisemos o circuito apresentado no texto.
+Para compreender a dedução detalhada passo a passo, analisemos novamente o circuito equivalente da cavidade, já com a impedância da linha rebatida para o secundário ($n^2 Z_0$).
 
 ### Passo 1: Aplicação da Lei dos Nós de Kirchhoff (KCL)
 
@@ -179,7 +179,7 @@ $\ddot{v}_C + \dot{v}_C \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{v_C}{LC} = \fr
 
 ### Passo 4: Transformada de Laplace
 
-Para encontrar a função de transferência $\frac{V_C(s)}{I_C(s)}$, aplica-se a **Transformada de Laplace** em ambos os membros da equação diferencial (2.1), considerando condições iniciais nulas ($\mathcal{L}\{\ddot{v}_C\} = s^2 V_C(s)$, $\mathcal{L}\{\dot{v}_C\} = s V_C(s)$ e $\mathcal{L}\{\dot{i}_C\} = s I_C(s)$):
+Para encontrar a função de transferência $\frac{V_C(s)}{I_C(s)}$, aplica-se a **Transformada de Laplace** em ambos os membros da equação diferencial obtida no Passo 3, considerando condições iniciais nulas ($\mathcal{L}\{\ddot{v}_C\} = s^2 V_C(s)$, $\mathcal{L}\{\dot{v}_C\} = s V_C(s)$ e $\mathcal{L}\{\dot{i}_C\} = s I_C(s)$):
 
 $\mathcal{L}\left\{ \ddot{v}_C + \dot{v}_C \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{v_C}{LC} \right\} = \mathcal{L}\left\{ \frac{\dot{i}_C}{C} \right\}$
 
@@ -189,7 +189,7 @@ Coloca-se $V_C(s)$ em evidência no membro esquerdo:
 
 $V_C(s) \left[ s^2 + s \frac{(n^2 Z_0 + R)}{n^2 R Z_0 C} + \frac{1}{LC} \right] = \frac{s}{C} I_C(s)$
 
-Isolando a razão $\frac{V_C(s)}{I_C(s)}$, obtém-se diretamente a equação:
+Isolando a razão $\frac{V_C(s)}{I_C(s)}$, obtém-se a função de transferência:
 
 $\frac{V_C(s)}{I_C(s)} = \frac{s/C}{s^2 + s(n^2 Z_o + R)/n^2 R Z_o C + 1/LC}$
 

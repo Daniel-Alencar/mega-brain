@@ -174,7 +174,7 @@ A translação para $500\text{ MHz}$ decorre de restrições da física dos acel
 A cavidade de RF do anel de armazenamento do Sirius é uma estrutura metálica oca cujas dimensões geométricas foram construídas para ressoar no modo fundamental $TM_{010}$ exatamente em $500\text{ MHz}$.
 
 - Se você injetar um sinal a $20\text{ MHz}$ na cavidade, ele se deparará com uma impedância praticamente nula (fora da ressonância, o indutor do circuito equivalente vira um curto-circuito para frequências baixas).
-- Apenas em torno de $500\text{ MHz}$ a cavidade atinge a ressonância paralela, onde sua impedância $Z \approx R_L$ é máxima, acumulando campos elétricos longitudinais de centenas de quilovolts necessários para acelerar as partículas.
+- Apenas em torno de $500\text{ MHz}$ a cavidade atinge a ressonância paralela, onde sua impedância é máxima e puramente resistiva ($Z = R_L = R \mathbin{/\mkern-1mu/} n^2 Z_0$, a resistência *shunt* $R$ da cavidade em paralelo com a impedância da linha rebatida pelo acoplador), acumulando campos elétricos longitudinais de centenas de quilovolts necessários para acelerar as partículas.
 
 #### Sincronismo com o Feixe de Elétrons
 

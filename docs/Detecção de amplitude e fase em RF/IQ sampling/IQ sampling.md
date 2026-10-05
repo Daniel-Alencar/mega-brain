@@ -36,7 +36,7 @@ Nesta condição, o avanço de fase entre duas amostras consecutivas é precisam
 
 $\Delta\phi = \omega \cdot T_s = 2\pi f_{IF} \cdot \frac{1}{4 f_{IF}} = \frac{\pi}{2} = 90^\circ$ 
 
-Avaliando a Equação em quatro instantes sucessivos ($t_0, t_1, t_2, t_3$):
+Avaliando $y(t) = I \sin(\omega t) + Q \cos(\omega t)$ em quatro instantes sucessivos ($t_0, t_1, t_2, t_3$):
 
 - Em $\omega t_0 = 0$: $y(t_0) = I \sin(0) + Q \cos(0) = \mathbf{Q}$
 - Em $\omega t_1 = \pi/2$: $y(t_1) = I \sin(\pi/2) + Q \cos(\pi/2) = \mathbf{I}$
@@ -61,7 +61,7 @@ Caso a razão seja outro número inteiro $m$ (com passo angular $\Delta\phi = \f
 
 $\begin{pmatrix} I \\ Q \end{pmatrix} = \frac{1}{\sin\Delta\phi} \begin{pmatrix} \cos(\phi + n\Delta\phi) & -\cos(\phi + (n+1)\Delta\phi) \\ -\sin(\phi + n\Delta\phi) & \sin(\phi + (n+1)\Delta\phi) \end{pmatrix} \begin{pmatrix} y_{n+1} \\ y_n \end{pmatrix}$
 
-O autor destaca que, caso $\Delta\phi$ se afaste substancialmente de $90^\circ$ ou $270^\circ$, o termo $\sin\Delta\phi$ no denominador torna-se pequeno, fazendo com que a estimativa de $I$ e $Q$ fique muito sensível a ruído e erros de amostragem.
+Caso $\Delta\phi$ se afaste substancialmente de $90^\circ$ ou $270^\circ$, o termo $\sin\Delta\phi$ no denominador torna-se pequeno, fazendo com que a estimativa de $I$ e $Q$ fique muito sensível a ruído e erros de amostragem.
 
 ### 5. Limitações e Fontes de Erro do *IQ Sampling* Clássico
 
@@ -74,4 +74,4 @@ Apesar da simplicidade e da baixíssima latência (ideais para malhas de realime
     - O 2.º harmônico dobra sobre a frequência de Nyquist, enquanto o **3.º harmônico sofre aliasing e cai exatamente em cima da frequência fundamental** $f_{IF}$.
     - Em geral, todos os harmônicos ímpares caem sobre a portadora, tornando-se indistinguíveis do sinal real e gerando distorções de medição que não podem ser eliminadas por filtragem linear subsequente.
 
-É justamente para superar essas limitações de harmônicos que o artigo introduz a seguir o **Non-IQ sampling** (onde a razão $f_s/f_{IF} = N/M$ distribui os harmônicos em outras partes do espectro) e o **Digital Down Conversion - DDC**.
+É justamente para superar essas limitações de harmônicos que existem as técnicas de **Non-IQ sampling** (onde a razão $f_s/f_{IF} = N/M$ distribui os harmônicos em outras partes do espectro) e de **Digital Down Conversion (DDC)**.

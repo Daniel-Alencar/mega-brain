@@ -214,7 +214,7 @@ Para fatores de decimação elevados ($R > 32$, aplicações de banda estreita),
     
 - **Relação com Médias Móveis:**
     
-    O artigo demonstra que um filtro CIC de 1.ª ordem é matematicamente idêntico a um filtro de média móvel recursivo (*running-sum* ou *box-car filter*), cuja função de transferência é uma resposta do tipo sinc:
+    Um filtro CIC de 1.ª ordem é matematicamente idêntico a um filtro de média móvel recursivo (*running-sum* ou *box-car filter*), cuja função de transferência é uma resposta do tipo sinc:
     
     $\vert{}H(f)\vert{} = \left\vert{} \frac{\sin(\pi D \frac{f}{f_{out}})}{\sin(\frac{\pi}{R} \frac{f}{f_{out}})} \right\vert{}^M$
     
@@ -225,7 +225,7 @@ Para fatores de decimação elevados ($R > 32$, aplicações de banda estreita),
 
 ### 4. DDC vs. IQ Sampling Clássico
 
-O documento resume as diferenças cruciais entre a amostragem síncrona simples e o DDC:
+Diferenças cruciais entre a amostragem síncrona simples e o DDC:
 
 | **Característica** | **IQ Demodulation (fs=4fIF)** | **Digital Down Conversion (DDC)** |
 | --- | --- | --- |
