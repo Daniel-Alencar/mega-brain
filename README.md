@@ -115,6 +115,58 @@ Cena `NonIQSampling` em
 [src/Non_IQ_sampling/non_iq_sampling.py](src/Non_IQ_sampling/non_iq_sampling.py).
 Esta animação **exige LaTeX**.
 
+## Filtros: ordem, roll-off, ressonância e o RLC
+
+Animação do conteúdo de [Filtros.md](docs/Filtros/Filtros.md):
+
+1. **Ordem.** Grau de D(s) = nº de polos = nº de elementos reativos (RC × RLC).
+2. **Roll-off.** Bode de 1ª ordem (−20 dB/década) × 2ª ordem (−40 dB/década).
+3. **Comportamento dinâmico.** Polos no plano s e resposta ao degrau variando ζ (e Q).
+4. **1ª ordem.** RC série: tensão no C (passa-baixa) e no R (passa-alta), com varredura de ω.
+5. **2ª ordem.** Mesmo D(s); o numerador define LP, BP ou HP; efeito de Q. Tabela-resumo.
+6. **RLC série, quatro filtros.** V_C, V_L, V_R e V_LC ⇒ LP, HP, BP e notch.
+7. **Série × paralelo.** |Z| mínima × máxima em ω₀ e a divisão de corrente nos ramos.
+
+Cena `Filtros` em [src/Filtros/filtros.py](src/Filtros/filtros.py). Exige LaTeX.
+
+## Modelagem_cavidade_RF: do campo 3D ao passa-banda
+
+Animação do conteúdo de
+[Modelagem de uma cavidade de RF.md](docs/Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md):
+
+1. **Por que RLC paralelo.** Campo E axial ↔ C, campo B azimutal ↔ L, perdas nas paredes ↔ R,
+   com a energia oscilando entre W_E e W_M.
+2. **Circuito equivalente.** Gerador (Norton), acoplador 1:n, cavidade e feixe em pacotes.
+3. **Rebatimento.** V₂ = nV₁, I₂ = I₁/n ⇒ Z₀' = n²Z₀; o transformador desaparece.
+4. **Lei dos nós.** Correntes nos ramos e a equação diferencial de 2ª ordem.
+5. **Laplace.** A impedância V_C(s)/I_C(s).
+6. **Forma canônica.** ω₀ = 1/√(LC), 2ω½ e K = 1/C.
+7. **Resposta em frequência.** L em curto, C em curto e L∥C aberto em ω₀.
+
+Cena `ModelagemCavidade` em
+[src/Modelagem_cavidade_RF/modelagem_cavidade.py](src/Modelagem_cavidade_RF/modelagem_cavidade.py). Exige LaTeX.
+
+## Componentes_sistema_RF: a malha LLRF
+
+Animação do conteúdo de
+[Componentes de um sistema de RF.md](docs/Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md):
+
+1. **A malha completa.** FPGA → DAC → mixer → filtro → amplificador → linhas → cavidade →
+   atenuadores → mixer → filtro → ADC → FPGA, com os 7 componentes numerados.
+2. **LLRF.** O PI corrige perturbações e mantém o fasor na faixa de tolerância.
+3. **Conversores.** Quantização do ADC e reconstrução em escada do DAC.
+4. **Down-conversion.** Produto de cossenos e espectro (20 e 980 MHz) com o passa-baixa.
+5. **Por que 20 MHz.** Jitter (Δv ≈ dv/dt·Δt), 5 amostras por período, offset DC e ruído 1/f.
+6. **Up-conversion.** 500 e 460 MHz, vazamento do LO e o passa-banda.
+7. **Por que 500 MHz.** Ressonância da cavidade e pacotes na crista do campo.
+8. **IQ na FPGA.** Desmodulação após o ADC e modulação (NCO) antes do DAC.
+9. **Cadeia de potência.** PreAmp, SSAMP, fontes e guias de onda.
+10. **Banda × ripple.** Sensibilidade |S| para BW de 1 kHz e 50 kHz com ripple de 10 kHz.
+
+Cena `ComponentesSistemaRF` em
+[src/Componentes_sistema_RF/componentes_sistema_rf.py](src/Componentes_sistema_RF/componentes_sistema_rf.py).
+Exige LaTeX.
+
 ## Estrutura
 
 ```
@@ -127,8 +179,14 @@ Master-Brain/
 │   │   └── digital_down_conversion.py  # modulação IQ, NCO, CIC e DDC
 │   ├── IQ_sampling/
 │   │   └── iq_sampling.py              # f_s = 4·f_IF e algoritmo de rotação
-│   └── Non_IQ_sampling/
-│       └── non_iq_sampling.py          # f_s/f_IF = N/M e mínimos quadrados
+│   ├── Non_IQ_sampling/
+│   │   └── non_iq_sampling.py          # f_s/f_IF = N/M e mínimos quadrados
+│   ├── Filtros/
+│   │   └── filtros.py                  # ordem, roll-off, ressonância, RLC
+│   ├── Modelagem_cavidade_RF/
+│   │   └── modelagem_cavidade.py       # cavidade → RLC paralelo → passa-banda
+│   └── Componentes_sistema_RF/
+│       └── componentes_sistema_rf.py   # malha LLRF completa
 ├── media/
 └── venv/
 ```
@@ -191,6 +249,12 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
     manim -pql src/Non_IQ_sampling/non_iq_sampling.py NonIQSampling
 ```
 
+```bash
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 manim -pql src/Filtros/filtros.py Filtros
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 manim -pql src/Modelagem_cavidade_RF/modelagem_cavidade.py ModelagemCavidade
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 manim -pql src/Componentes_sistema_RF/componentes_sistema_rf.py ComponentesSistemaRF
+```
+
 O `-p` abre o vídeo assim que ele termina de renderizar. Os arquivos ficam em:
 
 ```
@@ -199,6 +263,9 @@ media/videos/amplitude_fase_iq/480p15/AmplitudeFaseIQ.mp4
 media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
 media/videos/iq_sampling/480p15/IQSampling.mp4
 media/videos/non_iq_sampling/480p15/NonIQSampling.mp4
+media/videos/filtros/480p15/Filtros.mp4
+media/videos/modelagem_cavidade/480p15/ModelagemCavidade.mp4
+media/videos/componentes_sistema_rf/480p15/ComponentesSistemaRF.mp4
 ```
 
 Para que serve o `LD_PRELOAD`, veja [Problemas comuns](#problemas-comuns).
