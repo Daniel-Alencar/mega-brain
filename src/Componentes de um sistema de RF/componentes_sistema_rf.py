@@ -4,8 +4,8 @@ Componentes de um sistema de RF: a malha LLRF, da FPGA à cavidade e de volta
 ============================================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql src/Componentes_sistema_RF/componentes_sistema_rf.py ComponentesSistemaRF   # rascunho
-    manim -pqh src/Componentes_sistema_RF/componentes_sistema_rf.py ComponentesSistemaRF   # final
+    manim -pql "src/Componentes de um sistema de RF/componentes_sistema_rf.py" ComponentesSistemaRF   # rascunho
+    manim -pqh "src/Componentes de um sistema de RF/componentes_sistema_rf.py" ComponentesSistemaRF   # final
 
 Requer LaTeX (MathTex).
 

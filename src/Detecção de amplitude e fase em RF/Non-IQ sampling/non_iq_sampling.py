@@ -4,8 +4,8 @@ Non-IQ sampling: N amostras em M períodos e estimação por mínimos quadrados
 ===========================================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql src/Non_IQ_sampling/non_iq_sampling.py NonIQSampling   # rascunho
-    manim -pqh src/Non_IQ_sampling/non_iq_sampling.py NonIQSampling   # final
+    manim -pql "src/Detecção de amplitude e fase em RF/Non-IQ sampling/non_iq_sampling.py" NonIQSampling   # rascunho
+    manim -pqh "src/Detecção de amplitude e fase em RF/Non-IQ sampling/non_iq_sampling.py" NonIQSampling   # final
 
 Requer LaTeX (MathTex).
 

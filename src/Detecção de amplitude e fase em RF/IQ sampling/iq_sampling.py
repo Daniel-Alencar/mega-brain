@@ -4,8 +4,8 @@ IQ sampling: amplitude e fase de uma IF com um único ADC
 ========================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql src/IQ_sampling/iq_sampling.py IQSampling   # rascunho
-    manim -pqh src/IQ_sampling/iq_sampling.py IQSampling   # final
+    manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # rascunho
+    manim -pqh "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # final
 
 Requer LaTeX (MathTex).
 

@@ -4,8 +4,8 @@ Digital Down Conversion (DDC): da modulação IQ à extração digital de I e Q
 ==========================================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql src/Digital_Down_Conversion/digital_down_conversion.py DigitalDownConversion  # rascunho
-    manim -pqh src/Digital_Down_Conversion/digital_down_conversion.py DigitalDownConversion  # final
+    manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion  # rascunho
+    manim -pqh "src/Detecção de amplitude e fase em RF/Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion  # final
 
 Requer LaTeX (MathTex).
 

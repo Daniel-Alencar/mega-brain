@@ -4,8 +4,8 @@ Modelagem de uma cavidade de RF: do campo 3D ao filtro passa-banda
 ==================================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql src/Modelagem_cavidade_RF/modelagem_cavidade.py ModelagemCavidade   # rascunho
-    manim -pqh src/Modelagem_cavidade_RF/modelagem_cavidade.py ModelagemCavidade   # final
+    manim -pql "src/Modelagem de uma cavidade de RF/modelagem_cavidade.py" ModelagemCavidade   # rascunho
+    manim -pqh "src/Modelagem de uma cavidade de RF/modelagem_cavidade.py" ModelagemCavidade   # final
 
 Requer LaTeX (MathTex).
 
