@@ -45,14 +45,43 @@ Cena `AmplitudeFaseIQ` em
 [src/IQ_modulation/amplitude_fase_iq.py](src/IQ_modulation/amplitude_fase_iq.py).
 Esta animação **exige LaTeX**, porque usa `MathTex` e `DecimalNumber`.
 
+## Digital_Down_Conversion: da modulação IQ ao DDC
+
+Animação do conteúdo de
+[Digital Down Conversion.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md):
+
+1. **Amplitude e fase → I e Q.** A identidade da soma de arcos transforma
+   `A·cos(ωt + φ)` em `I·cos ωt − Q·sin ωt`; as duas ondas somadas e o fasor (I, Q).
+2. **Modulação e demodulação IQ.** Diagrama transmissor/receptor.
+3. **Demodulação dos canais I e Q.** O produto pelo LO, os termos em 2ωc e o LPF
+   que deixa `I(t)/2` e `Q(t)/2`.
+4. **Erro de fase Δθ no LO.** Os 4 termos do produto, o que sobrevive ao filtro e
+   a projeção num eixo girado: `½·I·cos Δθ − ½·Q·sin Δθ`.
+5. **Motivação do DDC.** Nyquist sobre a maior frequência (82 MSps) × sobre a
+   largura de banda (2 MSps).
+6. **Os três blocos do DDC.** Misturadores digitais, NCO e LPF de decimação.
+7. **NCO.** Acumulador de fase, LUT, `f_out = M/2^N · f_CLK`, resolução e
+   truncação de fase.
+8. **Mistura, filtragem e decimação.** Soma e diferença no espectro e o
+   aliasing quando se decima sem filtrar.
+9. **Filtro CIC.** Integradores, ↓R e pentes; equivalência com média móvel;
+   resposta sinc, droop e crescimento de bits.
+10. **DDC × IQ sampling clássico** e resumo.
+
+Cena `DigitalDownConversion` em
+[src/Digital_Down_Conversion/digital_down_conversion.py](src/Digital_Down_Conversion/digital_down_conversion.py).
+Esta animação **exige LaTeX**.
+
 ## Estrutura
 
 ```
 Master-Brain/
 ├── src/
-│   └── IQ_modulation/
-│       ├── iq_manim_llrf.py      # analógico × digital (DDC)
-│       └── amplitude_fase_iq.py  # como extrair amplitude e fase de I/Q
+│   ├── IQ_modulation/
+│   │   ├── iq_manim_llrf.py      # analógico × digital (DDC)
+│   │   └── amplitude_fase_iq.py  # como extrair amplitude e fase de I/Q
+│   └── Digital_Down_Conversion/
+│       └── digital_down_conversion.py  # modulação IQ, NCO, CIC e DDC
 ├── media/
 └── venv/
 ```
@@ -100,11 +129,17 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
     manim -pql src/IQ_modulation/amplitude_fase_iq.py AmplitudeFaseIQ
 ```
 
+```bash
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0 \
+    manim -pql src/Digital_Down_Conversion/digital_down_conversion.py DigitalDownConversion
+```
+
 O `-p` abre o vídeo assim que ele termina de renderizar. Os arquivos ficam em:
 
 ```
 media/videos/iq_manim_llrf/480p15/IQDemodulationComparison.mp4
 media/videos/amplitude_fase_iq/480p15/AmplitudeFaseIQ.mp4
+media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
 ```
 
 Para que serve o `LD_PRELOAD`, veja [Problemas comuns](#problemas-comuns).
