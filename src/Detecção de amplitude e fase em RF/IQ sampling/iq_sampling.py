@@ -16,7 +16,9 @@ Roteiro (segue "docs/Detecção de amplitude e fase em RF/IQ sampling"):
     Cena 3 - Amostragem síncrona f_s = 4·f_IF: amostras Q, I, −Q, −I
     Cena 4 - Algoritmo de rotação: matrizes com 0 e ±1, sem multiplicadores
     Cena 5 - Generalização f_s = m·f_IF: sensibilidade ao ruído ∝ 1/|sin Δφ|
-    Cena 6 - Limitações: offset DC (ondulação em f_IF) e aliasing de harmônicas
+    Cena 6 - Limitações: offset DC (ondulação em f_IF)
+    Cena 7 - O que é aliasing: a regra da dobra em f_s/2
+    Cena 8 - Por que as harmônicas ímpares caem sobre f_IF, e o que fazer
     Resumo
 
 Convenção:
@@ -160,6 +162,7 @@ class IQSampling(Scene):
         self.cena_rotacao()
         self.cena_generalizacao()
         self.cena_offset()
+        self.cena_aliasing()
         self.cena_harmonicas()
         self.cena_resumo()
 
@@ -578,77 +581,360 @@ class IQSampling(Scene):
         self.wait(2)
         self.limpar()
 
-    def cena_harmonicas(self):
-        self.titulo_cena("6 · Limitações: aliasing de harmônicas")
-        fs = 4.0
-        ax = Axes(x_range=[0, 7.6, 1], y_range=[0, 1.25, 0.5], x_length=12.4, y_length=2.1,
-                  axis_config={"include_tip": True, "stroke_width": 2, "color": COR_EIXO},
-                  y_axis_config={"include_tip": False}).move_to(P(0, 1.1))
-        marcas = marcar_x(ax, range(8), [str(k) for k in range(8)])
-        rot_f = Text("f / f_IF", font_size=18, color=COR_EIXO).next_to(ax.x_axis.get_end(), UP, buff=0.12)
-        zona = Polygon(ax.c2p(0, 0), ax.c2p(0, 1.2), ax.c2p(fs / 2, 1.2), ax.c2p(fs / 2, 0),
-                       stroke_width=0, fill_color=COR_DIGITAL, fill_opacity=0.12)
-        l_nyq = DashedLine(ax.c2p(fs / 2, 0), ax.c2p(fs / 2, 1.2), color=COR_DIGITAL, stroke_width=3)
-        r_nyq = tex(r"f_s/2", COR_DIGITAL, 26).next_to(l_nyq, UP, buff=0.08)
-        l_fs = DashedLine(ax.c2p(fs, 0), ax.c2p(fs, 1.2), color=GREY_B, stroke_width=2)
-        r_fs = tex(r"f_s", GREY_B, 26).next_to(l_fs, UP, buff=0.08)
-        raias = {k: raia(ax, k, ALTURAS[k], COR_I if k == 1 else GREY_B) for k in range(1, 8)}
-        rots = {k: Text(f"{k}ª", font_size=16, color=COR_I if k == 1 else GREY_A
-                        ).next_to(ax.c2p(k, ALTURAS[k]), UP, buff=0.06) for k in range(1, 8)}
+    # ================================================================== CENA 7
+    def cena_aliasing(self):
+        """A regra da dobra, antes de aplicá-la às harmônicas.
 
-        leg = self.legenda("Não linearidades de mixers e ADCs geram harmônicas de f_IF")
+        A dificuldade com aliasing quase nunca está na conta, e sim em aceitar
+        que o eixo de frequências se dobra. Esta cena faz uma varredura lenta:
+        enquanto a frequência real sobe sem parar, a frequência aparente vai e
+        volta dentro de [0, f_s/2], como uma sanfona.
+        """
+        self.titulo_cena("7 · O que é aliasing: a regra da dobra")
+        fs = 4.0
+
+        real = NumberLine(x_range=[0, 8, 1], length=11.6, include_numbers=True,
+                          font_size=20, color=COR_EIXO).move_to(P(0, 1.9))
+        rot_real = Text("frequência real do sinal   (em unidades de f_IF)",
+                        font_size=21, color=GREY_A).next_to(real, UP, buff=0.3)
+        # O eixo aparente usa a MESMA escala: é literalmente o trecho [0, f_s/2]
+        aparente = NumberLine(x_range=[0, 2, 0.5], length=11.6 / 4,
+                              include_numbers=True, font_size=20,
+                              color=COR_DIGITAL).move_to(P(-4.35, -1.5))
+        rot_ap = Text("frequência aparente: o que o ADC entrega",
+                      font_size=21, color=COR_DIGITAL)\
+            .next_to(aparente, DOWN, buff=0.35)
+
+        l_nyq = DashedLine(real.n2p(2) + DOWN * 0.35, real.n2p(2) + UP * 0.35,
+                           color=COR_DIGITAL, stroke_width=3)
+        r_nyq = tex(r"f_s/2", COR_DIGITAL, 24).next_to(l_nyq, UP, buff=0.05)
+        l_fs = DashedLine(real.n2p(4) + DOWN * 0.35, real.n2p(4) + UP * 0.35,
+                          color=GREY_B, stroke_width=2)
+        r_fs = tex(r"f_s", GREY_B, 24).next_to(l_fs, UP, buff=0.05)
+
+        leg = self.legenda("Acima: a frequência que o sinal tem de verdade. "
+                           "Abaixo: a que o ADC enxerga.")
+        self.play(Create(real), FadeIn(rot_real), run_time=1.2)
+        self.play(Create(l_nyq), FadeIn(r_nyq), Create(l_fs), FadeIn(r_fs),
+                  run_time=0.8)
+        self.play(Create(aparente), FadeIn(rot_ap), run_time=1.0)
+
+        f = ValueTracker(0.0)
+        p_real = always_redraw(
+            lambda: Dot(real.n2p(f.get_value()), radius=0.11, color=COR_RF))
+        p_ap = always_redraw(
+            lambda: Dot(aparente.n2p(alias(f.get_value(), fs)), radius=0.11,
+                        color=COR_ERRO))
+        lig = always_redraw(
+            lambda: tracejada(real.n2p(f.get_value()),
+                              aparente.n2p(alias(f.get_value(), fs)),
+                              GREY_B, 2))
+        painel = always_redraw(
+            lambda: Text(f"f = {f.get_value():.2f}·f_IF        "
+                         f"→  o ADC mostra {alias(f.get_value(), fs):.2f}·f_IF",
+                         font_size=26, color=WHITE).move_to(P(2.6, -1.5)))
+
+        leg = self.legenda("Enquanto a frequência real sobe sem parar…", leg)
+        self.add(p_real, p_ap, lig, painel)
+        self.play(f.animate.set_value(2.0), run_time=3, rate_func=linear)
+        leg = self.legenda("…a aparente bate em f_s/2 e VOLTA. O eixo se dobra "
+                           "aqui.", leg, COR_DIGITAL)
+        self.play(f.animate.set_value(4.0), run_time=3, rate_func=linear)
+        leg = self.legenda("Em f_s ela chega a zero: um sinal em f_s parece DC",
+                           leg, COR_ERRO2)
+        self.play(f.animate.set_value(6.0), run_time=3, rate_func=linear)
+        leg = self.legenda("E dobra de novo. A cada f_s/2 o eixo vira, como "
+                           "uma sanfona.", leg, COR_DIGITAL)
+        self.play(f.animate.set_value(8.0), run_time=3, rate_func=linear)
+        self.wait(0.6)
+
+        # A consequência: várias frequências reais, uma única aparente
+        leg = self.legenda("Resultado: frequências diferentes chegam ao mesmo "
+                           "ponto lá embaixo", leg, COR_ERRO)
+        self.remove(p_real, p_ap, lig, painel)
+        alvos = [1.0, 3.0, 5.0, 7.0]
+        setas, pontos = VGroup(), VGroup()
+        for v in alvos:
+            pontos.add(Dot(real.n2p(v), radius=0.1, color=COR_ERRO))
+            setas.add(CurvedArrow(real.n2p(v) + DOWN * 0.12,
+                                  aparente.n2p(1.0) + UP * 0.18,
+                                  color=COR_ERRO, angle=-0.45, stroke_width=3,
+                                  tip_length=0.16))
+        destino = Dot(aparente.n2p(1.0), radius=0.13, color=COR_ERRO)
+        self.play(LaggedStart(*[GrowFromCenter(p) for p in pontos],
+                              lag_ratio=0.2), run_time=1.2)
+        self.play(LaggedStart(*[Create(a) for a in setas], lag_ratio=0.25),
+                  run_time=2.4)
+        self.play(GrowFromCenter(destino), Flash(aparente.n2p(1.0),
+                                                 color=COR_ERRO,
+                                                 line_length=0.25), run_time=1.0)
+
+        regra = VGroup(
+            tex(r"f_{ap} = f \bmod f_s,\qquad "
+                r"\text{se } f_{ap} > f_s/2:\ f_{ap} \leftarrow f_s - f_{ap}",
+                WHITE, 30),
+            Text("1·f_IF, 3·f_IF, 5·f_IF e 7·f_IF viram todas a MESMA coisa",
+                 font_size=23, color=COR_ERRO),
+            Text("depois de amostrado, não há informação para desfazer isso",
+                 font_size=23, color=COR_ERRO2),
+        ).arrange(DOWN, buff=0.25).move_to(P(2.9, -1.6))
+        leg = self.legenda("Essa é a regra inteira do aliasing", leg)
+        self.play(LaggedStart(*[FadeIn(r, shift=UP * 0.15) for r in regra],
+                              lag_ratio=0.35), run_time=2.4)
+        self.wait(2.0)
+        self.limpar()
+
+    # ================================================================== CENA 8
+    def cena_harmonicas(self):
+        self.titulo_cena("8 · Por que as harmônicas ímpares caem sobre f_IF")
+        fs = 4.0
+        ax = Axes(x_range=[0, 7.6, 1], y_range=[0, 1.25, 0.5], x_length=12.0,
+                  y_length=1.7,
+                  axis_config={"include_tip": True, "stroke_width": 2,
+                               "color": COR_EIXO},
+                  y_axis_config={"include_tip": False}).move_to(P(0, 2.0))
+        marcas = marcar_x(ax, range(8), [str(k) for k in range(8)])
+        rot_f = Text("f / f_IF", font_size=18, color=COR_EIXO)\
+            .next_to(ax.x_axis.get_end(), UP, buff=0.12)
+        zona = Polygon(ax.c2p(0, 0), ax.c2p(0, 1.2), ax.c2p(fs / 2, 1.2),
+                       ax.c2p(fs / 2, 0), stroke_width=0,
+                       fill_color=COR_DIGITAL, fill_opacity=0.12)
+        l_nyq = DashedLine(ax.c2p(fs / 2, 0), ax.c2p(fs / 2, 1.2),
+                           color=COR_DIGITAL, stroke_width=3)
+        r_nyq = tex(r"f_s/2", COR_DIGITAL, 24).next_to(l_nyq, UP, buff=0.06)
+        l_fs = DashedLine(ax.c2p(fs, 0), ax.c2p(fs, 1.2), color=GREY_B,
+                          stroke_width=2)
+        r_fs = tex(r"f_s", GREY_B, 24).next_to(l_fs, UP, buff=0.06)
+        raias = {k: raia(ax, k, ALTURAS[k], COR_I if k == 1 else GREY_B)
+                 for k in range(1, 8)}
+        rots = {k: Text(f"{k}ª", font_size=16,
+                        color=COR_I if k == 1 else GREY_A)
+                .next_to(ax.c2p(k, ALTURAS[k]), UP, buff=0.06)
+                for k in range(1, 8)}
+
+        leg = self.legenda("Mixers e ADCs não são perfeitamente lineares: "
+                           "geram harmônicas de f_IF")
         self.play(Create(ax), FadeIn(marcas), FadeIn(rot_f))
         self.play(GrowArrow(raias[1]), FadeIn(rots[1]))
-        self.play(LaggedStart(*[AnimationGroup(GrowArrow(raias[k]), FadeIn(rots[k])) for k in range(2, 8)],
-                              lag_ratio=0.2), run_time=2)
-        leg = self.legenda("Com f_s = 4·f_IF, Nyquist fica em 2·f_IF: o que está acima dobra para dentro", leg,
-                           COR_DIGITAL)
-        self.play(FadeIn(zona), Create(l_nyq), FadeIn(r_nyq), Create(l_fs), FadeIn(r_fs))
+        self.play(LaggedStart(*[AnimationGroup(GrowArrow(raias[k]),
+                                               FadeIn(rots[k]))
+                                for k in range(2, 8)], lag_ratio=0.2),
+                  run_time=2)
+        leg = self.legenda("Com f_s = 4·f_IF, Nyquist fica em 2·f_IF — "
+                           "tudo à direita vai dobrar", leg, COR_DIGITAL)
+        self.play(FadeIn(zona), Create(l_nyq), FadeIn(r_nyq), Create(l_fs),
+                  FadeIn(r_fs))
 
+        # ------------------------------------------- uma harmônica de cada vez
         pos, grupos = posicoes_alias(fs)
-        novos = {}
-        anims = []
+        contas = {
+            2: (r"2 \bmod 4 = 2", "fica em cima de Nyquist", GREY_A),
+            3: (r"3 \bmod 4 = 3 > 2 \;\Rightarrow\; 4-3 = 1",
+                "cai EXATAMENTE sobre f_IF", COR_ERRO),
+            4: (r"4 \bmod 4 = 0", "vira offset DC", COR_ERRO2),
+            5: (r"5 \bmod 4 = 1", "cai sobre f_IF", COR_ERRO),
+            6: (r"6 \bmod 4 = 2", "Nyquist de novo", GREY_A),
+            7: (r"7 \bmod 4 = 3 > 2 \;\Rightarrow\; 4-3 = 1",
+                "cai sobre f_IF", COR_ERRO),
+        }
+        novos, etiquetas = {}, VGroup()
+        conta_atual, texto_atual = None, None
+        leg = self.legenda("Aplicando a regra da dobra, uma harmônica "
+                           "de cada vez", leg)
         for k in range(2, 8):
-            cai = abs(alias(k, fs) - 1) < 1e-6
-            novos[k] = raia(ax, pos[k], ALTURAS[k], COR_ERRO if cai else GREY_B)
-            anims.append(ReplacementTransform(raias[k], novos[k], path_arc=PI / 2))
-        self.play(*anims, *[FadeOut(rots[k]) for k in range(2, 8)], run_time=3)
-        rot_grupos = VGroup()
-        for a, ks in grupos.items():
-            outras = [k for k in ks if k != 1]
-            if not outras:
-                continue
-            txt = ", ".join(f"{k}ª" for k in outras)
-            if 1 in ks:
-                rot_grupos.add(Text(txt + "  →  sobre f_IF!", font_size=20, color=COR_ERRO
-                                    ).next_to(ax.c2p(1.25, 0.95), RIGHT, buff=0.05))
+            formula, veredito, cor = contas[k]
+            nova_conta = tex(rf"{k}^a:\quad {formula}", WHITE, 32)\
+                .move_to(P(-2.6, 0.55))
+            novo_texto = Text(veredito, font_size=26, color=cor)\
+                .move_to(P(2.9, 0.55))
+            if conta_atual is None:
+                conta_atual, texto_atual = nova_conta, novo_texto
+                self.play(Write(conta_atual), FadeIn(texto_atual), run_time=1.0)
             else:
-                rot_grupos.add(Text(txt, font_size=16, color=GREY_A).next_to(
-                    ax.c2p(a, max(ALTURAS[k] for k in outras)), UP, buff=0.08))
-        self.play(FadeIn(rot_grupos))
-        leg = self.legenda("A 2ª cai sobre Nyquist; 3ª, 5ª e 7ª caem exatamente em cima da fundamental", leg,
-                           COR_ERRO)
-        self.play(*[Indicate(novos[k], color=COR_ERRO) for k in (3, 5, 7)])
-        self.wait(0.8)
+                self.play(Transform(conta_atual, nova_conta),
+                          Transform(texto_atual, novo_texto), run_time=0.8)
+            cai = abs(alias(k, fs) - 1) < 1e-6
+            novos[k] = raia(ax, pos[k], ALTURAS[k],
+                            COR_ERRO if cai else GREY_B)
+            self.play(ReplacementTransform(raias[k], novos[k],
+                                           path_arc=PI / 2),
+                      FadeOut(rots[k]), run_time=1.0 if k <= 4 else 0.7)
+            if cai:
+                self.play(Indicate(novos[k], color=COR_ERRO), run_time=0.5)
+            etq = Text(f"{k}ª", font_size=15, color=cor)\
+                .next_to(ax.c2p(pos[k], ALTURAS[k]), UP, buff=0.05)
+            etiquetas.add(etq)
+            self.play(FadeIn(etq), run_time=0.3)
 
-        # Domínio do tempo: a 3ª harmônica gera as mesmas amostras de um sinal em f_IF
-        ax_t = eixos_tempo(P(0, -1.75), 12, 1.8, [0, 2, 0.25], [-1.0, 1.0, 0.5])
-        rot_t = rotulo_eixo(ax_t, Text("3ª harmônica (vermelho) × senoide em f_IF (tracejada)", font_size=20,
-                                       color=GREY_A))
-        h3 = ax_t.plot(lambda x: 0.8 * np.sin(3 * TAU * x), x_range=[0, 2, 0.005], color=COR_ERRO, stroke_width=3)
-        h1 = DashedVMobject(ax_t.plot(lambda x: -0.8 * np.sin(TAU * x), x_range=[0, 2, 0.005],
-                                      color=COR_I, stroke_width=4), num_dashes=50)
-        pts = VGroup(*[Dot(ax_t.c2p(k / 4, 0.8 * np.sin(3 * TAU * k / 4)), radius=0.08, color=WHITE)
-                       for k in range(9)])
-        leg = self.legenda("No tempo: amostrada 4 vezes por período, a 3ª harmônica…", leg)
-        self.play(Create(ax_t), FadeIn(rot_t))
-        self.play(Create(h3), run_time=1.5)
-        self.play(LaggedStart(*[GrowFromCenter(p) for p in pts], lag_ratio=0.1))
-        leg = self.legenda("…dá as MESMAS amostras de um sinal em f_IF: impossível separar por filtragem", leg,
-                           COR_ERRO)
-        self.play(Create(h1), run_time=2)
-        self.play(Indicate(pts, color=COR_ERRO))
+        self.play(FadeOut(VGroup(conta_atual, texto_atual)), run_time=0.6)
+        regra = VGroup(
+            tex(r"k \in \{3,5,7,\dots\} \;\Rightarrow\; "
+                r"k \equiv \pm 1 \!\pmod 4 \;\Rightarrow\; f_{ap} = f_{IF}",
+                COR_ERRO, 32),
+            Text("TODAS as harmônicas ímpares caem sobre o sinal",
+                 font_size=26, color=COR_ERRO),
+            Text("e a 3ª é justamente a mais forte num circuito balanceado",
+                 font_size=22, color=GREY_A),
+        ).arrange(DOWN, buff=0.25).move_to(P(0, 0.4))
+        leg = self.legenda("E não é coincidência — é uma propriedade do "
+                           "divisor 4", leg, COR_ERRO)
+        self.play(LaggedStart(*[FadeIn(r, shift=UP * 0.15) for r in regra],
+                              lag_ratio=0.35), run_time=2.2)
         self.wait(1.8)
+
+        # --------------------------- por quê: 4 pontos por volta (roda de carroça)
+        leg = self.legenda("Por que isso acontece? Amostrar 4 vezes por "
+                           "período é andar de 90° em 90°", leg, COR_RF)
+        self.play(FadeOut(VGroup(ax, marcas, rot_f, zona, l_nyq, r_nyq, l_fs,
+                                 r_fs, raias[1], rots[1], regra, etiquetas,
+                                 *[novos[k] for k in novos])), run_time=0.9)
+
+        R = 1.3
+        c1, c2 = P(-3.5, 0.3), P(3.5, 0.3)
+        grupos_circ = VGroup()
+        setas_g = []
+        for centro, titulo_txt, cor in (
+                (c1, "fundamental: +90° por amostra", COR_I),
+                (c2, "3ª harmônica: +270° por amostra", COR_ERRO)):
+            circ = Circle(radius=R, color=COR_EIXO, stroke_width=2)\
+                .move_to(centro)
+            marcos = VGroup(*[Dot(centro + R * np.array([np.cos(a), np.sin(a), 0]),
+                                  radius=0.07, color=COR_EIXO)
+                              for a in (0, PI / 2, PI, 3 * PI / 2)])
+            rot = Text(titulo_txt, font_size=21, color=cor)\
+                .next_to(circ, UP, buff=0.35)
+            s = seta(centro, centro + R * RIGHT, cor, 5)
+            setas_g.append(s)
+            grupos_circ.add(VGroup(circ, marcos, rot, s))
+        self.play(LaggedStart(*[FadeIn(g) for g in grupos_circ], lag_ratio=0.3),
+                  run_time=1.6)
+
+        marcados = VGroup()
+        for j in range(1, 5):
+            self.play(Rotate(setas_g[0], PI / 2, about_point=c1),
+                      Rotate(setas_g[1], 3 * PI / 2, about_point=c2),
+                      run_time=1.0)
+            for centro, s in ((c1, setas_g[0]), (c2, setas_g[1])):
+                ponta = s.get_end()
+                marcados.add(Dot(ponta, radius=0.09, color=COR_AMOSTRA))
+                marcados.add(Text(str(j), font_size=18, color=COR_AMOSTRA)
+                             .move_to(centro + 1.38 * (ponta - centro) / R
+                                      * (R / np.linalg.norm(ponta - centro))))
+            self.play(FadeIn(marcados[-4:]), run_time=0.4)
+
+        conclusao = VGroup(
+            tex(r"3 \times 90^\circ = 270^\circ \equiv -90^\circ", COR_ERRO, 34),
+            Text("andar 3/4 de volta para a frente é o mesmo que\n"
+                 "andar 1/4 de volta para trás", font_size=23, color=GREY_A,
+                 line_spacing=0.9),
+            Text("os mesmos 4 pontos, na ordem inversa → amostras idênticas",
+                 font_size=24, color=COR_ERRO),
+        ).arrange(DOWN, buff=0.25).move_to(P(0, -2.2))
+        leg = self.legenda("É o efeito da roda de carroça do cinema: "
+                           "a roda parece girar ao contrário", leg, COR_ERRO)
+        self.play(LaggedStart(*[FadeIn(c, shift=UP * 0.15) for c in conclusao],
+                              lag_ratio=0.3), run_time=2.4)
+        self.wait(1.8)
+        self.play(FadeOut(VGroup(grupos_circ, marcados, conclusao)),
+                  run_time=0.8)
+
+        # ------------------------------------------------- prova no tempo
+        ax_t = eixos_tempo(P(0, 0.9), 11.6, 2.4, [0, 2, 0.25], [-1.0, 1.0, 0.5])
+        rot_t = rotulo_eixo(ax_t, Text("3ª harmônica (vermelho) × senoide em "
+                                       "f_IF (tracejada)", font_size=21,
+                                       color=GREY_A))
+        h3 = ax_t.plot(lambda x: 0.8 * np.sin(3 * TAU * x), x_range=[0, 2, 0.005],
+                       color=COR_ERRO, stroke_width=3)
+        h1 = DashedVMobject(ax_t.plot(lambda x: -0.8 * np.sin(TAU * x),
+                                      x_range=[0, 2, 0.005], color=COR_I,
+                                      stroke_width=4), num_dashes=50)
+        pts = VGroup(*[Dot(ax_t.c2p(k / 4, 0.8 * np.sin(3 * TAU * k / 4)),
+                           radius=0.09, color=COR_AMOSTRA) for k in range(9)])
+        verticais = VGroup(*[DashedLine(ax_t.c2p(k / 4, -1.0),
+                                        ax_t.c2p(k / 4, 1.0), color=GREY_D,
+                                        stroke_width=1.5) for k in range(9)])
+        leg = self.legenda("A prova no tempo: as duas curvas são bem "
+                           "diferentes…", leg)
+        self.play(Create(ax_t), FadeIn(rot_t), run_time=0.9)
+        self.play(Create(h3), run_time=1.5)
+        self.play(Create(h1), run_time=1.5)
+        leg = self.legenda("…mas o ADC só olha nestes 9 instantes", leg,
+                           COR_AMOSTRA)
+        self.play(Create(verticais), run_time=1.0)
+        self.play(LaggedStart(*[GrowFromCenter(p) for p in pts],
+                              lag_ratio=0.12), run_time=1.6)
+        leg = self.legenda("As duas passam pelos MESMOS pontos: nenhum filtro "
+                           "digital separa isso", leg, COR_ERRO)
+        self.play(Indicate(pts, color=COR_ERRO, scale_factor=1.4), run_time=1.2)
+        self.wait(1.5)
+
+        # ----------------------------------- o estrago no fasor medido
+        leg = self.legenda("E o que isso faz com a medida de amplitude e fase?",
+                           leg, COR_ERRO2)
+        self.play(FadeOut(VGroup(ax_t, rot_t, h3, h1, pts, verticais)),
+                  run_time=0.8)
+
+        eixos, rotulos = plano(P(-3.6, -0.2), 4.4, 1.4)
+        o = eixos.c2p(0, 0)
+        v1 = np.array([I0, Q0])
+        v3 = np.array([0.30, -0.26])          # exagerado para enxergar
+        vr = v1 + v3
+        f1 = seta(o, eixos.c2p(*v1), COR_RF, 6)
+        f3 = seta(eixos.c2p(*v1), eixos.c2p(*vr), COR_ERRO, 5)
+        fr = seta(o, eixos.c2p(*vr), COR_ERRO2, 6)
+        r1 = Text("sinal", font_size=20, color=COR_RF)\
+            .next_to(eixos.c2p(*v1), UP, buff=0.12)
+        r3 = Text("3ª harmônica", font_size=19, color=COR_ERRO)\
+            .next_to(eixos.c2p(*vr), RIGHT, buff=0.12)
+        rr = Text("o que você mede", font_size=20, color=COR_ERRO2)\
+            .next_to(eixos.c2p(*vr), DOWN, buff=0.2)
+        ang1 = float(np.arctan2(v1[1], v1[0]))
+        angr = float(np.arctan2(vr[1], vr[0]))
+        arco_err = arco_angulo(o, 1.0, angr, ang1 - angr, COR_ERRO2, 4)
+
+        self.play(Create(eixos), FadeIn(rotulos), run_time=0.8)
+        self.play(GrowArrow(f1), FadeIn(r1), run_time=0.8)
+        self.play(GrowArrow(f3), FadeIn(r3), run_time=0.9)
+        self.play(GrowArrow(fr), FadeIn(rr), Create(arco_err), run_time=1.1)
+
+        impacto = VGroup(
+            Text("a harmônica vira um fasor em f_IF e se SOMA ao sinal",
+                 font_size=23, color=COR_ERRO),
+            tex(r"\Delta\varphi \approx \frac{A_3}{A_1}\ \text{rad}",
+                COR_ERRO2, 34),
+            Text("−40 dBc  →  0,01 rad  ≈  0,57° de erro de fase",
+                 font_size=23, color=COR_ERRO2),
+            Text("e o erro gira junto com a fase do sinal:\n"
+                 "não é offset, não dá para calibrar fora",
+                 font_size=22, color=GREY_A, line_spacing=0.9),
+        ).arrange(DOWN, buff=0.28).move_to(P(3.2, -0.2))
+        self.play(LaggedStart(*[FadeIn(i, shift=RIGHT * 0.2) for i in impacto],
+                              lag_ratio=0.3), run_time=2.6)
+        self.wait(2.0)
+
+        # ------------------------------------------------------- as saídas
+        leg = self.legenda("Aliasing não se conserta depois. Só se previne.",
+                           leg, COR_DIGITAL)
+        self.play(FadeOut(VGroup(eixos, rotulos, f1, f3, fr, r1, r3, rr,
+                                 arco_err, impacto)), run_time=0.8)
+        saidas = VGroup(
+            Text("Quatro saídas, todas antes da amostragem:", font_size=27,
+                 color=WHITE),
+            Text("1 · filtro anti-aliasing analógico antes do ADC",
+                 font_size=24, color=COR_I),
+            Text("2 · manter a cadeia linear: recuar do P1dB reduz a 3ª",
+                 font_size=24, color=COR_I),
+            Text("3 · Non-IQ sampling: escolher f_s/f_IF = N/M em que a 3ª "
+                 "não colide", font_size=24, color=COR_DIGITAL),
+            Text("4 · sobreamostrar + DDC: a 3ª cai em 3·f_IF, abaixo de "
+                 "Nyquist, e o filtro a remove", font_size=24, color=COR_DIGITAL),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.38).move_to(P(0, 0.3))
+        self.play(LaggedStart(*[FadeIn(x, shift=RIGHT * 0.2) for x in saidas],
+                              lag_ratio=0.35), run_time=3.2)
+        colisao = tex(r"\text{colide quando}\quad k\,M \bmod N "
+                      r"\in \{M,\; N-M\}", GREY_A, 28).move_to(P(0, -2.3))
+        self.play(FadeIn(colisao), run_time=0.9)
+        self.wait(2.2)
         self.limpar()
 
     # ================================================================== RESUMO

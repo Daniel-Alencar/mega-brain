@@ -16,17 +16,20 @@ O repositório tem duas partes que andam juntas:
 | Componentes de um sistema de RF | [.md](docs/Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md) | [componentes_sistema_rf.py](src/Componentes%20de%20um%20sistema%20de%20RF/componentes_sistema_rf.py) | `ComponentesSistemaRF` | ~4 min |
 | Modelagem de uma cavidade de RF | [.md](docs/Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md) | [modelagem_cavidade.py](src/Modelagem%20de%20uma%20cavidade%20de%20RF/modelagem_cavidade.py) | `ModelagemCavidade` | ~3 min |
 | Filtros | [.md](docs/Filtros/Filtros.md) | [filtros.py](src/Filtros/filtros.py) | `Filtros` | ~3 min |
-| Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~3 min |
+| Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~6 min |
 | Detecção de amplitude e fase: Non-IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
 | Detecção de amplitude e fase: Digital Down Conversion | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
 | DDC: Decimador | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Decimador.md) | [decimador.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/decimador.py) | `Decimador` | ~2 min |
 | DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~2 min |
 | DDC: Filtro FIR | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20FIR.md) | [filtro_fir.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_fir.py) | `FiltroFIR` | ~2 min |
+| Signal Conditioning: Mixer | — | [Mixer.py](src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer.py) | `Mixer` | ~9 min |
 
 Uma ordem natural de estudo é a da tabela: primeiro a malha LLRF como um todo,
 depois a cavidade e os filtros, e por fim as três técnicas de detecção de
 amplitude e fase. Os três últimos aprofundam blocos do DDC: o decimador e os
-filtros CIC e FIR.
+filtros CIC e FIR. O Mixer fecha a volta pelo lado analógico: mostra o que o
+hardware de RF faz antes de o sinal chegar ao ADC, e por que a mistura digital
+dentro da FPGA é tão mais limpa.
 
 ## O que cada animação mostra
 
@@ -76,9 +79,31 @@ filtros CIC e FIR.
 4. **Algoritmo de rotação.** Janela de 2 amostras e matrizes só com 0 e ±1.
 5. **Generalização f_s = m·f_IF.** Cada amostra é uma faixa (± ruído); a incerteza
    no cruzamento cresce com `1/|sin Δφ|`.
-6. **Limitações.** Offset DC gera ripple em f_IF; com f_s = 4·f_IF as harmônicas
-   ímpares caem sobre a portadora (no espectro e no tempo).
-7. **Resumo.**
+6. **Offset DC.** O erro troca de sinal a cada passo: o ponto (I, Q) salta num
+   quadrado e aparece ripple em f_IF.
+7. **O que é aliasing.** A regra da dobra, antes de qualquer harmônica: uma
+   varredura lenta mostra a frequência real subindo sem parar enquanto a
+   aparente vai e volta dentro de [0, f_s/2], como uma sanfona. Termina com
+   1, 3, 5 e 7·f_IF convergindo todas para o mesmo ponto.
+8. **Harmônicas ímpares sobre f_IF.** A regra é aplicada uma harmônica de cada
+   vez, com a aritmética na tela (`3 mod 4 = 3 > 2 ⇒ 4 − 3 = 1`); depois o
+   porquê no círculo (`3×90° = 270° ≡ −90°`, o efeito da roda de carroça), a
+   prova no tempo (as duas curvas passam pelos mesmos 9 pontos), o estrago no
+   fasor medido (`Δφ ≈ A₃/A₁`, −40 dBc → 0,57°) e as quatro saídas possíveis.
+9. **Resumo.**
+
+Para gerar o vídeo desta animação, a partir da raiz do repositório:
+
+```bash
+source venv/bin/activate
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0   # veja Problemas comuns
+
+manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # rascunho 480p
+manim -pqh "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # final 1080p
+```
+
+O arquivo sai em `media/videos/iq_sampling/480p15/IQSampling.mp4` (ou
+`1080p60/` com `-qh`), e o `-p` abre o vídeo assim que ele fica pronto.
 
 ### Non-IQ sampling
 
@@ -153,6 +178,41 @@ Exemplo usado: atraso do comb D = 4.
 6. **Custo.** Passa-baixa com 11, 31 e 101 taps: transição mais estreita exige mais multiplicadores.
 7. **FIR × IIR.** Equações e tabela comparativa.
 
+### Mixer
+
+Frequências do exemplo: f_RF = 100 MHz, f_LO = 130 MHz, f_IF = 30 MHz.
+
+1. **Mixer ideal.** O produto ponto a ponto vira um batimento; o batimento é
+   decomposto nas duas senoides que o formam (`f_LO − f_RF` e `f_LO + f_RF`) e
+   o espectro mostra que não há mais nada além delas.
+2. **Nenhum componente multiplica tensões.** Curva I × V exponencial do diodo,
+   ponto de operação e as aproximações de Taylor de ordem 1, 2 e 3; a soma dos
+   dois tons atravessa a curva e sai deformada.
+3. **Quem gera o quê.** Termo a termo (`a·v_in`, `b·v_in²`, `c·v_in³`), com um
+   espectro embaixo que vai sendo preenchido: vazamento, a IF que nasce do
+   termo quadrático, harmônicos e intermodulação.
+4. **A família m·f_RF ± n·f_LO.** O espectro real construído ordem por ordem,
+   com cada raia rotulada e colorida por categoria; SFDR ≈ 5 dBc.
+5. **Frequência imagem.** Duas entradas simétricas em torno do LO caem na mesma
+   IF; o cosseno real é a soma de dois fasores girando em sentidos opostos, e é
+   o fasor negativo que cria a imagem. Mistura complexa I/Q resolve.
+6. **No FPGA.** Cadeia ADC → mixer → CIC → FIR com o DDS; a rampa de fase
+   truncada e a LUT quantizada mostram de onde vêm os espúrios digitais
+   (`SFDR ≈ −6,02·B`); e o caso `f_LO = f_s/4`, em que a multiplicação vira
+   `{1, 0, −1, 0}`.
+7. **Atraso de grupo.** Elíptico analógico (pico perto da banda) × FIR de fase
+   linear (constante), e o custo em margem de fase numa malha de realimentação.
+
+Na mesma pasta, [`Mixer_plot.py`](src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer_plot.py)
+é a simulação numérica que acompanha a animação: gera os quatro espectros em
+matplotlib, identifica automaticamente o par (m, n) de cada raia e mede o SFDR e
+o atraso de grupo. Não é Manim; roda direto:
+
+```bash
+python3 "src/Signal Conditioning and Down Conversion/Mixer/Mixer_plot.py"            # abre as 4 janelas
+python3 "src/Signal Conditioning and Down Conversion/Mixer/Mixer_plot.py" --salvar   # grava os PNGs em figuras/
+```
+
 ## Estrutura
 
 `src/` espelha `docs/`: cada animação fica na pasta com o mesmo nome do assunto
@@ -183,8 +243,13 @@ Master-Brain/
 │   │       └── non_iq_sampling.py
 │   ├── Filtros/
 │   │   └── filtros.py
-│   └── Modelagem de uma cavidade de RF/
-│       └── modelagem_cavidade.py
+│   ├── Modelagem de uma cavidade de RF/
+│   │   └── modelagem_cavidade.py
+│   └── Signal Conditioning and Down Conversion/
+│       └── Mixer/
+│           ├── Mixer.py                        # animação (cena Mixer)
+│           ├── Mixer_plot.py                   # simulação em matplotlib
+│           └── figuras/                        # PNGs gerados por --salvar
 ├── media/                                      # saída do Manim (ignorada pelo git)
 └── venv/                                       # ambiente Python (ignorado pelo git)
 ```
@@ -235,6 +300,7 @@ manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/dig
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/decimador.py" Decimador
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_cic.py" FiltroCIC
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_fir.py" FiltroFIR
+manim -pql "src/Signal Conditioning and Down Conversion/Mixer/Mixer.py" Mixer
 ```
 
 O `-p` abre o vídeo assim que ele termina de renderizar. O vídeo fica em
@@ -250,6 +316,7 @@ media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
 media/videos/decimador/480p15/Decimador.mp4
 media/videos/filtro_cic/480p15/FiltroCIC.mp4
 media/videos/filtro_fir/480p15/FiltroFIR.mp4
+media/videos/Mixer/480p15/Mixer.mp4
 ```
 
 ### Qualidade de renderização
@@ -290,6 +357,9 @@ Constantes específicas:
 | `non_iq_sampling.py` | `N`, `M` | razão de amostragem `f_s/f_IF = N/M` (padrão 9/2) |
 | `non_iq_sampling.py` | `SIGMA` | ruído das amostras nas cenas de mínimos quadrados e de ruído |
 | `modelagem_cavidade.py` | `Q_CARREGADO` | fator de qualidade do gráfico de \|Z(jω)\| |
+| `Mixer.py`, `Mixer_plot.py` | `F_RF`, `F_LO` | frequências de RF e do LO (padrão 100 e 130 MHz) |
+| `Mixer.py`, `Mixer_plot.py` | `COEFS` | coeficientes do polinômio de transferência do mixer real |
+| `Mixer.py` | `FD_RF`, `FD_LO` | frequências reduzidas usadas nas cenas no domínio do tempo |
 
 Valores numéricos marcados como ilustrativos ou exagerados (tolerâncias, número
 de bits, Q, amplitudes de harmônicas) servem para que o efeito fique visível na
