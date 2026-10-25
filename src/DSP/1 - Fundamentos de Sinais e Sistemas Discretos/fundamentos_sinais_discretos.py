@@ -92,14 +92,19 @@ def fio(a, b, cor=WHITE, largura=3):
                  max_stroke_width_to_length_ratio=10)
 
 
-def eixo_n(centro, largura, altura, n0, n1, ymin, ymax):
+def eixo_n(centro, largura, altura, n0, n1, ymin, ymax, passo_y=1):
     """Eixo para sequências: n inteiro no eixo horizontal."""
-    return Axes(x_range=[n0, n1, 1], y_range=[ymin, ymax, 1],
+    return Axes(x_range=[n0, n1, 1], y_range=[ymin, ymax, passo_y],
                 x_length=largura, y_length=altura,
                 axis_config=EIXO_CFG).move_to(centro)
 
 
-def marcar_n(ax, ns, tamanho=17, y=0):
+def marcar_n(ax, ns, tamanho=17, y=None):
+    """Números do eixo n. Ficam abaixo do ponto mais baixo do gráfico: se a
+    sequência tem valores negativos, abaixo do zero eles seriam atravessados
+    pelas hastes (e o "0" ficaria sobre o eixo vertical)."""
+    if y is None:
+        y = min(0.0, ax.y_range[0])
     return VGroup(*[Text(str(int(n)), font_size=tamanho, color=GREY_B)
                     .next_to(ax.c2p(n, y), DOWN, buff=0.14) for n in ns])
 
@@ -202,7 +207,7 @@ class FundamentosSinaisDiscretos(Scene):
     def cena_discreto(self):
         self.titulo_cena("1 · Do contínuo ao discreto")
 
-        ax_c = eixo_n(P(0.2, 1.55), 11.0, 1.8, 0, 12, -1.3, 1.3)
+        ax_c = eixo_n(P(0.2, 1.65), 11.0, 1.5, 0, 12, -1.3, 1.3)
         rot_c = Text("x(t): existe em todo instante", font_size=21,
                      color=GREY_A).next_to(ax_c, UP, buff=0.1)\
             .align_to(ax_c, LEFT)
@@ -229,7 +234,7 @@ class FundamentosSinaisDiscretos(Scene):
                               lag_ratio=0.12), run_time=1.6)
         self.wait(1.2)
 
-        ax_d = eixo_n(P(0.2, -1.35), 11.0, 1.8, 0, 12, -1.3, 1.3)
+        ax_d = eixo_n(P(0.2, -0.55), 11.0, 1.5, 0, 12, -1.3, 1.3)
         rot_d = Text("x[n]: só existe para n inteiro", font_size=21,
                      color=COR_X).next_to(ax_d, UP, buff=0.1)\
             .align_to(ax_d, LEFT)
@@ -245,7 +250,7 @@ class FundamentosSinaisDiscretos(Scene):
         self.wait(1.5)
 
         eq = tex_partes([(r"x[n] = x(nT)", WHITE), (r"\qquad f_s = 1/T", COR_H)],
-                        32).move_to(P(0, Y_BASE + 0.1))
+                        32).move_to(P(0, -2.25))
         self.play(Write(eq), run_time=1.4)
         self.wait(1.4)
 
@@ -254,7 +259,7 @@ class FundamentosSinaisDiscretos(Scene):
                  font_size=23, color=COR_OK),
             Text("entre duas amostras não existe \"nada\" — "
                  "x[1,5] não tem significado", font_size=23, color=COR_ERRO),
-        ).arrange(DOWN, buff=0.22).move_to(P(0, Y_BASE + 0.1))
+        ).arrange(DOWN, buff=0.22).move_to(P(0, -2.3))
         leg = self.legenda("Duas consequências que costumam escapar", leg,
                            COR_OK)
         self.play(FadeOut(eq), run_time=0.5)
@@ -268,7 +273,7 @@ class FundamentosSinaisDiscretos(Scene):
 
         n0, n1 = -5, 7
         ns = np.arange(n0, n1 + 1)
-        ax = eixo_n(P(0, 0.9), 11.0, 2.4, n0, n1, 0, 1.4)
+        ax = eixo_n(P(0, 1.25), 11.0, 1.9, n0, n1, 0, 1.4)
         num = marcar_n(ax, ns)
 
         # --- impulso unitário -----------------------------------------------
@@ -345,7 +350,7 @@ class FundamentosSinaisDiscretos(Scene):
         self.play(Create(ax), FadeIn(num), Write(eq), run_time=1.4)
         dec = hastes(ax, ns, 2.0 * 0.82 ** ns, COR_X, largura=3)
         rot_dec = Text("a = 0,82  →  decai", font_size=22, color=COR_X)\
-            .move_to(P(3.6, 2.0))
+            .move_to(P(-2.8, -0.55))
         self.play(LaggedStart(*[GrowFromPoint(h, ax.c2p(n, 0))
                                 for h, n in zip(dec, ns)], lag_ratio=0.1),
                   run_time=1.8)
@@ -353,7 +358,7 @@ class FundamentosSinaisDiscretos(Scene):
         self.wait(1.4)
         cre = hastes(ax, ns, 0.25 * 1.12 ** ns, COR_ERRO, largura=3)
         rot_cre = Text("a = 1,12  →  cresce sem limite", font_size=22,
-                       color=COR_ERRO).move_to(P(3.3, 1.3))
+                       color=COR_ERRO).move_to(P(2.8, -0.55))
         self.play(LaggedStart(*[GrowFromPoint(h, ax.c2p(n, 0))
                                 for h, n in zip(cre, ns)], lag_ratio=0.1),
                   run_time=1.8)
@@ -415,7 +420,7 @@ class FundamentosSinaisDiscretos(Scene):
                 r"= e^{\,j\omega n}", WHITE, 30),
             Text("só faz sentido falar de ω entre −π e π: "
                  "é a raiz do aliasing", font_size=22, color=GREY_A),
-        ).arrange(DOWN, buff=0.22).move_to(P(0, -1.35))
+        ).arrange(DOWN, buff=0.22).move_to(P(0, -1.6))
         ajustar(arm1, 12.0)
         self.revelar(arm1, pausa=1.4)
         self.wait(1.6)
@@ -429,7 +434,7 @@ class FundamentosSinaisDiscretos(Scene):
                 r"\frac{\omega}{2\pi} \in \mathbb{Q}", WHITE, 30),
             Text("ω = 1 rad/amostra: ω/2π ≈ 0,159…, irracional → "
                  "nunca se repete", font_size=22, color=GREY_A),
-        ).arrange(DOWN, buff=0.22).move_to(P(0, -1.35))
+        ).arrange(DOWN, buff=0.22).move_to(P(0, -1.6))
         ajustar(arm2, 12.0)
         self.revelar(arm2, pausa=1.4)
         leg = self.legenda("No contínuo, todo cosseno é periódico. "
@@ -460,7 +465,8 @@ class FundamentosSinaisDiscretos(Scene):
                            "lugar e com a sua altura", leg, COR_IMP)
         mini = VGroup()
         for k in range(5):
-            axk = eixo_n(P(1.1 + 0.0, 2.3 - 1.05 * k), 4.6, 0.8, -1, 5, 0, 5.6)
+            axk = eixo_n(P(1.1, 2.35 - 0.95 * k), 4.6, 0.75, -1, 5, 0, 5.6,
+                         passo_y=6)
             hk = haste(axk, k, x[k], COR_IMP, raio=0.06, largura=3)
             rotk = tex(rf"{int(x[k])}\,\delta[n-{k}]", COR_IMP, 24)\
                 .next_to(axk, RIGHT, buff=0.25)
@@ -482,9 +488,11 @@ class FundamentosSinaisDiscretos(Scene):
         leg = self.legenda("Parece trivial — e é a ideia mais importante "
                            "de toda a teoria LTI", leg, COR_OK)
         self.wait(1.2)
-        porque = Text("se o sistema é linear e invariante, basta saber "
-                      "o que ele faz com UM impulso", font_size=23,
-                      color=COR_H).move_to(P(0, Y_BASE - 0.75))
+        porque = ajustar(Text("se o sistema é linear e\n"
+                              "invariante, basta saber o que\n"
+                              "ele faz com UM impulso", font_size=23,
+                              color=COR_H, line_spacing=0.9), 4.6)\
+            .move_to(P(-3.7, -1.35))
         self.play(FadeIn(porque, shift=UP * 0.15), run_time=1.0)
         self.wait(2.4)
         self.limpar()
@@ -658,15 +666,15 @@ class FundamentosSinaisDiscretos(Scene):
         y = convolucao(x, h)
 
         eq = ajustar(tex_partes([(r"y[n] = ", COR_Y),
-                                 (r"\sum_{k} x[k]\,h[n-k]", WHITE)], 36), 9.0)\
-            .move_to(P(0, Y_TOPO))
+                                 (r"\sum_{k} x[k]\,h[n-k]", WHITE)], 36), 6.0)\
+            .move_to(P(3.3, 2.75))
         leg = self.legenda("Se vale a decomposição em impulsos e o sistema "
                            "é LTI, a saída é esta soma")
         self.play(Write(eq), run_time=2.0)
         self.wait(1.6)
 
-        ax_x = eixo_n(P(-3.8, 1.25), 4.6, 1.5, -3, 5, 0, 3.4)
-        ax_h = eixo_n(P(2.6, 1.25), 4.6, 1.5, -3, 5, 0, 3.4)
+        ax_x = eixo_n(P(-3.8, 1.0), 4.6, 1.5, -3, 5, 0, 3.4)
+        ax_h = eixo_n(P(2.6, 1.0), 4.6, 1.5, -3, 5, 0, 3.4)
         r_x = Text("x[n] = 1, 2, 3", font_size=22, color=COR_X)\
             .next_to(ax_x, UP, buff=0.1).align_to(ax_x, LEFT)
         r_h = Text("h[n] = 1, 1, 1  (média móvel)", font_size=22, color=COR_H)\
@@ -687,7 +695,7 @@ class FundamentosSinaisDiscretos(Scene):
         ax_y = eixo_n(P(0, -1.75), 9.0, 1.7, -1, 6, 0, 6.5)
         num_y = marcar_n(ax_y, np.arange(0, 6))
         r_y = Text("y[n]", font_size=24, color=COR_Y)\
-            .next_to(ax_y, UP, buff=0.1).align_to(ax_y, LEFT)
+            .next_to(ax_y, LEFT, buff=0.25).align_to(ax_y, UP)
         self.play(Create(ax_y), FadeIn(num_y), FadeIn(r_y), run_time=1.0)
 
         contas = {
@@ -700,7 +708,7 @@ class FundamentosSinaisDiscretos(Scene):
         conta_mob, g_y = None, VGroup()
         for n in range(5):
             txt = Text(contas[n], font_size=24, color=COR_Y)\
-                .move_to(P(0, -0.35))
+                .move_to(P(0, -0.25))
             if conta_mob is None:
                 conta_mob = txt
                 self.play(FadeIn(conta_mob), run_time=0.7)
@@ -717,7 +725,7 @@ class FundamentosSinaisDiscretos(Scene):
         self.wait(1.8)
         nota = Text("a saída é mais longa que a entrada — "
                     "o filtro \"espalha\" cada amostra", font_size=23,
-                    color=COR_OK).move_to(P(0, -0.35))
+                    color=COR_OK).move_to(P(0, -0.25))
         self.play(FadeIn(nota, shift=UP * 0.15), run_time=0.9)
         self.wait(2.2)
         self.limpar()
@@ -729,7 +737,7 @@ class FundamentosSinaisDiscretos(Scene):
         eq = ajustar(tex_partes([
             (r"y[n] = ", COR_Y), (r"\sum_{k=0}^{M} b_k\,x[n-k]", COR_X),
             (r"\;-\;", WHITE), (r"\sum_{k=1}^{N} a_k\,y[n-k]", COR_Y)], 34),
-            11.5).move_to(P(0, Y_TOPO))
+            11.5).move_to(P(0, 2.3))
         leg = self.legenda("Na prática, o sistema não é descrito por h[n], "
                            "e sim por uma receita de cálculo")
         self.play(Write(eq), run_time=2.4)
@@ -740,16 +748,17 @@ class FundamentosSinaisDiscretos(Scene):
                  font_size=23, color=COR_X),
             Text("os a: pesos sobre SAÍDAS passadas — realimentação",
                  font_size=23, color=COR_Y),
-        ).arrange(DOWN, buff=0.26).move_to(P(0, 1.5))
+        ).arrange(DOWN, buff=0.26).move_to(P(0, 1.15))
         self.revelar(partes, pausa=1.4)
         self.wait(1.0)
 
         # FIR x IIR
         leg = self.legenda("A presença ou não dos a separa o mundo "
                            "em dois", leg, COR_OK)
+        self.play(FadeOut(partes), run_time=0.7)
         nsb = np.arange(0, 13)
-        ax_f = eixo_n(P(-3.4, -0.9), 4.8, 2.0, 0, 12, 0, 1.3)
-        ax_i = eixo_n(P(3.4, -0.9), 4.8, 2.0, 0, 12, 0, 1.3)
+        ax_f = eixo_n(P(-3.4, -1.25), 4.8, 1.8, 0, 12, 0, 1.3)
+        ax_i = eixo_n(P(3.4, -1.25), 4.8, 1.8, 0, 12, 0, 1.3)
         hf = np.where(nsb < 4, 1.0, 0.0)
         hi = 0.8 ** nsb
         g_f = hastes(ax_f, nsb, hf, COR_X, raio=0.055, largura=3)

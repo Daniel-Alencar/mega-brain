@@ -618,7 +618,7 @@ class Mixer(Scene):
         self.wait(1.5)
 
         nota = Text("mudou a forma  →  há frequências novas lá dentro",
-                    font_size=24, color=COR_OK).move_to(P(0, Y_BASE))
+                    font_size=22, color=COR_OK).move_to(P(3.3, -2.75))
         self.play(FadeIn(nota, shift=UP * 0.15), run_time=0.9)
         leg = self.legenda("A mistura que queremos é efeito colateral "
                            "dessa deformação", leg, COR_IF)
@@ -673,9 +673,9 @@ class Mixer(Scene):
         # --- termo quadrático ------------------------------------------------
         leg = self.legenda("Termo quadrático: é aqui, e só aqui, que nasce "
                            "a multiplicação", leg, COR_IF)
-        t2 = tex_partes([(r"b\,v_{in}^2 = b\,v_{RF}^2", WHITE),
-                         (r"\;+\;2b\,v_{RF}v_{LO}", COR_IF),
-                         (r"\;+\;b\,v_{LO}^2", WHITE)], 34).move_to(P(0, 1.95))
+        t2 = tex_partes([(r"b\,v_{in}^2 = b\,v_{RF}^2\quad+\quad", WHITE),
+                         (r"2b\,v_{RF}v_{LO}", COR_IF),
+                         (r"\quad+\quad b\,v_{LO}^2", WHITE)], 34).move_to(P(0, 1.95))
         self.play(FadeOut(n1), ReplacementTransform(t1, t2), run_time=1.4)
         self.wait(1.2)
         cx = SurroundingRectangle(t2[1], color=COR_IF, buff=0.1,

@@ -398,7 +398,8 @@ class IQSampling(Scene):
             nome, cor = nomes[k % 4]
             y = np.sin(FI0 + k * PI / 2)
             h = haste(ax, k / 4, y, cor, 0.08, 3)
-            r = tex(nome, cor, 30).next_to(ax.c2p(k / 4, y), UP if y >= 0 else DOWN, buff=0.12)
+            r = tex(nome, cor, 30).next_to(ax.c2p(k / 4, 0), DOWN if y >= 0 else UP,
+                                           buff=0.16).shift(RIGHT * 0.22)
             anims = [GrowFromPoint(h, ax.c2p(k / 4, 0)), FadeIn(r)]
             if k < 8:
                 anims.append(FadeIn(fluxo[k]))
@@ -450,8 +451,9 @@ class IQSampling(Scene):
         for k, ((x, y), lbl, cor) in enumerate(pares):
             v = seta(o, eixos.c2p(x, y), cor, 6)
             d = np.array([x, y, 0.0]) / np.hypot(x, y)
-            r = tex(lbl, cor, 26).move_to(o + d * 2.15)
-            idx = tex(rot_t[k], GREY_A, 24).move_to(o + d * 1.35)
+            r = tex(lbl, cor, 26).move_to(o + d * 2.4)
+            perp = np.array([-d[1], d[0], 0.0])
+            idx = tex(rot_t[k], GREY_A, 24).move_to(o + d * 1.0 + perp * 0.32)
             setas_v.add(v)
             rotulos_v.add(VGroup(r, idx))
             if k == 0:
