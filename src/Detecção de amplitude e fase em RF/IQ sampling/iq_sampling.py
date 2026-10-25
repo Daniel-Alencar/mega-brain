@@ -14,11 +14,14 @@ Roteiro (segue "docs/Detecção de amplitude e fase em RF/IQ sampling"):
     Cena 1 - Representação polar × cartesiana: y = A·sin(ωt + φ0) = I·sin ωt + Q·cos ωt
     Cena 2 - O que o ADC mede: só a projeção vertical do fasor, um número por amostra
     Cena 3 - Amostragem síncrona f_s = 4·f_IF: amostras Q, I, −Q, −I
-    Cena 4 - Algoritmo de rotação: matrizes com 0 e ±1, sem multiplicadores
-    Cena 5 - Generalização f_s = m·f_IF: sensibilidade ao ruído ∝ 1/|sin Δφ|
-    Cena 6 - Limitações: offset DC (ondulação em f_IF)
-    Cena 7 - O que é aliasing: a regra da dobra em f_s/2
-    Cena 8 - Por que as harmônicas ímpares caem sobre f_IF, e o que fazer
+    Cena 4 - Os quatro vetores (y_{i+1}, y_i): por que o segundo é (−Q, I)
+    Cena 5 - Algoritmo de rotação: matrizes com 0 e ±1, sem multiplicadores
+    Cena 6 - Primeiro uso: detectar um erro de fase numa malha de controle
+    Cena 7 - Segundo uso: ler uma mensagem escrita na fase (demodulação)
+    Cena 8 - Generalização f_s = m·f_IF: sensibilidade ao ruído ∝ 1/|sin Δφ|
+    Cena 9 - Limitações: offset DC (ondulação em f_IF)
+    Cena 10 - O que é aliasing: a regra da dobra em f_s/2
+    Cena 11 - Por que as harmônicas ímpares caem sobre f_IF, e o que fazer
     Resumo
 
 Convenção:
@@ -41,6 +44,11 @@ COR_EIXO = GREY_B
 FUNDO = "#0e1117"
 
 EIXO_CFG = {"include_tip": False, "stroke_width": 2, "color": COR_EIXO}
+
+Y_TOPO = 2.70            # nada de conteúdo acima disto: a linha do título mora em ~3.1
+Y_BASE = -2.55           # nada de conteúdo abaixo disto: a narração mora em ~-3.5
+LARG_MAX = 12.6
+
 FI0 = np.deg2rad(35)                      # fase φ0 usada nas cenas
 I0, Q0 = np.cos(FI0), np.sin(FI0)         # A = 1
 ALTURAS = [0, 1.0, 0.55, 0.5, 0.42, 0.36, 0.3, 0.26]   # amplitudes das harmônicas (ilustrativas)
@@ -51,6 +59,13 @@ ALTURAS = [0, 1.0, 0.55, 0.5, 0.42, 0.36, 0.3, 0.26]   # amplitudes das harmôni
 # =============================================================================
 def P(x, y):
     return np.array([x, y, 0.0])
+
+
+def ajustar(m, largura=LARG_MAX):
+    """Encolhe o mobject se ele for largo demais para a tela."""
+    if m.width > largura:
+        m.scale(largura / m.width)
+    return m
 
 
 def tex(s, cor=WHITE, tamanho=34):
@@ -159,7 +174,10 @@ class IQSampling(Scene):
         self.cena_polar()
         self.cena_adc()
         self.cena_sincrona()
+        self.cena_vetores()
         self.cena_rotacao()
+        self.cena_erro_fase()
+        self.cena_mensagem()
         self.cena_generalizacao()
         self.cena_offset()
         self.cena_aliasing()
@@ -180,13 +198,21 @@ class IQSampling(Scene):
                      stroke_width=2).shift(DOWN * 0.12)
         self.play(Transform(titulo[0], novo), Transform(titulo[1], linha), run_time=0.8)
 
-    def legenda(self, texto, anterior=None, cor=GREY_A):
-        nova = Text(texto, font_size=24, color=cor).to_edge(DOWN, buff=0.3)
+    def legenda(self, texto, anterior=None, cor=GREY_A, pausa=None):
+        """Narração no rodapé. Espera o tempo de leitura antes de prosseguir."""
+        nova = ajustar(Text(texto, font_size=24, color=cor), 13.2).to_edge(DOWN, buff=0.35)
         if anterior is None:
             self.play(FadeIn(nova, shift=UP * 0.2), run_time=0.7)
         else:
             self.play(FadeOut(anterior, shift=UP * 0.2), FadeIn(nova, shift=UP * 0.2), run_time=0.7)
+        self.wait(pausa if pausa is not None else 0.5 + 0.024 * len(texto))
         return nova
+
+    def revelar(self, itens, pausa=0.9, desloc=RIGHT * 0.2, run_time=0.8):
+        """Mostra uma lista item a item, com pausa para leitura."""
+        for item in itens:
+            self.play(FadeIn(item, shift=desloc), run_time=run_time)
+            self.wait(pausa)
 
     def limpar(self):
         for m in self.mobjects:
@@ -387,8 +413,314 @@ class IQSampling(Scene):
         self.limpar()
 
     # ================================================================== CENA 4
+    def cena_vetores(self):
+        """Os quatro vetores da Fig. 7 de Schilcher.
+
+        É aqui que quase todo mundo tropeça: os rótulos (y_{i+1}, y_i) não
+        dizem em que eixo a ponta do vetor está — dizem quais comprimentos,
+        medidos no instante t0, foram parar em cada eixo depois da rotação.
+        """
+        self.titulo_cena("4 · Os quatro vetores do par de amostras")
+
+        fluxo = tex_partes([(r"y_0 = Q,\ ", COR_Q), (r"y_1 = I,\ ", COR_I),
+                            (r"y_2 = -Q,\ ", COR_Q), (r"y_3 = -I,\ ", COR_I),
+                            (r"\dots", WHITE)], 30).move_to(P(0, Y_TOPO))
+        leg = self.legenda("O ADC entregou quatro números. Cada PAR vizinho "
+                           "vira um ponto no plano I/Q.")
+        self.play(Write(fluxo), run_time=1.6)
+        self.wait(1.2)
+
+        eixos, rotulos = plano(P(-3.5, -0.35), 4.6, 1.35)
+        o = eixos.c2p(0, 0)
+        circulo = DashedVMobject(
+            Circle(radius=eixos.c2p(1, 0)[0] - o[0], color=COR_EIXO)
+            .move_to(o), num_dashes=40).set_stroke(width=2)
+        self.play(Create(eixos), FadeIn(rotulos), Create(circulo), run_time=1.1)
+
+        # Os quatro pares, em coordenadas (x, y) = (y_{i+1}, y_i)
+        pares = [((I0, Q0), r"\begin{pmatrix} I \\ Q \end{pmatrix}", COR_RF),
+                 ((-Q0, I0), r"\begin{pmatrix} -Q \\ I \end{pmatrix}", COR_Q),
+                 ((-I0, -Q0), r"\begin{pmatrix} -I \\ -Q \end{pmatrix}", COR_I),
+                 ((Q0, -I0), r"\begin{pmatrix} Q \\ -I \end{pmatrix}", COR_ERRO2)]
+        rot_t = [r"t_0", r"t_1", r"t_2", r"t_3"]
+
+        leg = self.legenda("O primeiro par é o próprio vetor de referência: "
+                           "x = I, y = Q", leg, COR_RF)
+        setas_v, rotulos_v = VGroup(), VGroup()
+        for k, ((x, y), lbl, cor) in enumerate(pares):
+            v = seta(o, eixos.c2p(x, y), cor, 6)
+            d = np.array([x, y, 0.0]) / np.hypot(x, y)
+            r = tex(lbl, cor, 26).move_to(o + d * 2.15)
+            idx = tex(rot_t[k], GREY_A, 24).move_to(o + d * 1.35)
+            setas_v.add(v)
+            rotulos_v.add(VGroup(r, idx))
+            if k == 0:
+                self.play(GrowArrow(v), FadeIn(r), FadeIn(idx), run_time=1.0)
+                self.wait(1.4)
+
+        # O ponto central: girar 90° não é trocar o sinal de uma coordenada
+        leg = self.legenda("Entre uma amostra e a seguinte, o fasor gira 90°. "
+                           "Veja para onde ele vai.", leg, COR_DIGITAL)
+        copia = setas_v[0].copy().set_color(COR_DIGITAL)
+        self.add(copia)
+        self.play(Rotate(copia, PI / 2, about_point=o), run_time=2.0)
+        self.play(GrowArrow(setas_v[1]), FadeIn(rotulos_v[1]), run_time=0.9)
+        self.play(FadeOut(copia), run_time=0.5)
+        self.wait(1.0)
+
+        regra = VGroup(
+            tex(r"(x,\,y) \;\longrightarrow\; (-y,\;x)", COR_DIGITAL, 34),
+            Text("girar 90° troca os eixos E inverte um sinal",
+                 font_size=22, color=GREY_A),
+            tex_partes([(r"(I, Q) \to (-Q,\, I)", COR_I)], 30),
+            Text("não (−I, Q): isso seria um espelhamento, não uma rotação",
+                 font_size=22, color=COR_ERRO),
+        ).arrange(DOWN, buff=0.24).move_to(P(3.2, 0.9))
+        ajustar(regra, 6.6)
+        self.revelar(regra, pausa=1.3)
+        self.wait(1.0)
+
+        leg = self.legenda("Os outros dois seguem a mesma regra", leg)
+        for k in (2, 3):
+            self.play(GrowArrow(setas_v[k]), FadeIn(rotulos_v[k]), run_time=0.8)
+            self.wait(0.7)
+        self.wait(0.8)
+
+        # A leitura correta dos rótulos
+        leg = self.legenda("E aqui está a armadilha da notação", leg, COR_ERRO)
+        self.play(FadeOut(regra), run_time=0.6)
+        aviso = VGroup(
+            Text("As letras dentro do vetor NÃO são", font_size=23,
+                 color=COR_ERRO),
+            Text("o nome do eixo onde a ponta está.", font_size=23,
+                 color=COR_ERRO),
+            Text("São os comprimentos medidos em t₀,", font_size=23,
+                 color=COR_I),
+            Text("girados para os novos eixos.", font_size=23, color=COR_I),
+            Text("Em t₁ a ponta está à esquerda e acima:", font_size=21,
+                 color=GREY_A),
+            Text("x vale −Q  e  y vale I.", font_size=23, color=COR_DIGITAL),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.2).move_to(P(3.2, 0.4))
+        ajustar(aviso, 6.6)
+        self.revelar(aviso, pausa=1.1)
+        self.wait(1.2)
+
+        leg = self.legenda("Quatro setas de mesmo comprimento, separadas por "
+                           "90°: é a Fig. 7", leg, COR_RF)
+        self.play(*[Indicate(v, color=WHITE, scale_factor=1.08)
+                    for v in setas_v], run_time=1.4)
+        self.wait(1.6)
+        self.limpar()
+
+    # ================================================================== CENA 6
+    def cena_erro_fase(self):
+        """Primeiro uso: a malha de controle, onde a fase deve ficar parada."""
+        self.titulo_cena("6 · Primeiro uso: detectar um erro de fase")
+
+        A = np.sqrt(2.0)
+        eixos, rotulos = plano(P(-3.7, -0.35), 4.6, 1.9)
+        o = eixos.c2p(0, 0)
+        raio = eixos.c2p(A, 0)[0] - o[0]
+        circulo = DashedVMobject(Circle(radius=raio, color=COR_EIXO).move_to(o),
+                                 num_dashes=48).set_stroke(width=2)
+
+        leg = self.legenda("Num acelerador, queremos que a fase do campo "
+                           "fique parada. Vamos medi-la.")
+        self.play(Create(eixos), FadeIn(rotulos), Create(circulo), run_time=1.1)
+
+        # Estado de referência: 45°
+        v_ref = seta(o, eixos.c2p(1.0, 1.0), COR_RF, 6)
+        r_ref = tex(r"I = 1,\; Q = 1", COR_RF, 28)\
+            .move_to(P(3.3, Y_TOPO - 0.1))
+        arco_ref = arco_angulo(o, 0.7, 0, np.deg2rad(45), WHITE, 3)
+        lbl_ref = Text("45°", font_size=24, color=WHITE)\
+            .move_to(o + 1.05 * np.array([np.cos(np.deg2rad(22)),
+                                          np.sin(np.deg2rad(22)), 0]))
+        self.play(GrowArrow(v_ref), FadeIn(r_ref), run_time=1.0)
+        self.play(Create(arco_ref), FadeIn(lbl_ref), run_time=0.8)
+        conta_ref = tex(r"\varphi_0 = \operatorname{atan}(Q/I) "
+                        r"= \operatorname{atan}(1/1) = 45^\circ", COR_RF, 30)\
+            .move_to(P(3.3, 1.55))
+        self.play(Write(conta_ref), run_time=1.6)
+        leg = self.legenda("Com o sinal puro, toda janela de 2 amostras "
+                           "devolve os mesmos 45°", leg, COR_RF)
+        fluxo_ok = tex_partes([(r"1,\;1,\;-1,\;-1,\;1,\;1,\dots", COR_RF)],
+                              30).move_to(P(3.3, 0.75))
+        self.play(Write(fluxo_ok), run_time=1.2)
+        self.wait(1.6)
+
+        # A perturbação
+        leg = self.legenda("Agora uma instabilidade atrasa a fase do sinal "
+                           "em 10°", leg, COR_ERRO)
+        fi2 = np.deg2rad(35)
+        I2, Q2 = A * np.cos(fi2), A * np.sin(fi2)
+        v_novo = seta(o, eixos.c2p(I2, Q2), COR_ERRO2, 6)
+        self.play(GrowArrow(v_novo), run_time=1.4)
+        arco_err = arco_angulo(o, 1.6, fi2, np.deg2rad(45) - fi2,
+                               COR_ERRO, 6)
+        lbl_err = Text("10°", font_size=22, color=COR_ERRO)\
+            .move_to(o + 2.05 * np.array([np.cos(np.deg2rad(40)),
+                                          np.sin(np.deg2rad(40)), 0]))
+        self.play(Create(arco_err), FadeIn(lbl_err), run_time=0.9)
+        self.wait(1.0)
+
+        leg = self.legenda("As amostras mudam, mas o algoritmo é o mesmo: "
+                           "ele desfaz sempre 90° por passo", leg)
+        novo = VGroup(
+            tex(r"Q = 0{,}81,\quad I = 1{,}16", COR_ERRO2, 30),
+            tex(r"\operatorname{atan}(0{,}81 / 1{,}16) = 35^\circ",
+                COR_ERRO2, 30),
+            Text("a amplitude não mudou: √(I² + Q²) = 1,41",
+                 font_size=21, color=GREY_A),
+        ).arrange(DOWN, buff=0.24).move_to(P(3.3, -0.55))
+        ajustar(novo, 7.2)
+        self.revelar(novo, pausa=1.3)
+        self.wait(1.0)
+
+        leg = self.legenda("O ponto deslizou SOBRE o círculo: fase mudou, "
+                           "amplitude não", leg, COR_ERRO2)
+        self.play(Indicate(circulo, color=COR_ERRO2, scale_factor=1.0),
+                  run_time=1.2)
+        self.wait(1.0)
+
+        malha = VGroup(
+            tex(r"\Delta\varphi = 45^\circ - 35^\circ = 10^\circ",
+                COR_ERRO, 34),
+            Text("o controlador recebe esse erro e corrige a fase",
+                 font_size=22, color=COR_I),
+        ).arrange(DOWN, buff=0.26).move_to(P(3.3, -2.1))
+        ajustar(malha, 7.2)
+        leg = self.legenda("É assim que a malha de LLRF enxerga uma "
+                           "perturbação", leg, COR_I)
+        self.revelar(malha, pausa=1.4)
+        self.wait(1.2)
+
+        ressalva = Text("durante o salto, o par que pisa nos dois estados\n"
+                        "dá uma leitura intermediária — é a hipótese de\n"
+                        "amplitude e fase quase constantes entre amostras",
+                        font_size=20, color=GREY_A, line_spacing=0.9)\
+            .move_to(P(-3.7, Y_BASE - 0.15))
+        self.play(FadeIn(ressalva, shift=UP * 0.15), run_time=1.0)
+        self.wait(2.2)
+        self.limpar()
+
+    # ================================================================== CENA 7
+    def cena_mensagem(self):
+        """Segundo uso: a mesma conta, mas agora a fase É a informação."""
+        self.titulo_cena("7 · Segundo uso: ler uma mensagem na fase")
+
+        leg = self.legenda("Mas e se o salto de fase não for um defeito — "
+                           "e sim a mensagem?")
+        pergunta = VGroup(
+            Text("na malha de controle:  variação de fase = erro a corrigir",
+                 font_size=24, color=COR_I),
+            Text("na comunicação:  variação de fase = informação a ler",
+                 font_size=24, color=COR_DIGITAL),
+        ).arrange(DOWN, buff=0.3).move_to(P(0, 1.2))
+        self.revelar(pergunta, pausa=1.5)
+        self.wait(1.0)
+        self.play(FadeOut(pergunta), run_time=0.7)
+
+        A = np.sqrt(2.0)
+        eixos, rotulos = plano(P(-3.7, -0.3), 4.8, 1.9)
+        o = eixos.c2p(0, 0)
+        raio = eixos.c2p(A, 0)[0] - o[0]
+        circulo = DashedVMobject(Circle(radius=raio, color=COR_EIXO).move_to(o),
+                                 num_dashes=48).set_stroke(width=2)
+        self.play(Create(eixos), FadeIn(rotulos), Create(circulo), run_time=1.0)
+
+        simbolos = [(45, "00", COR_I), (135, "01", COR_Q),
+                    (225, "11", COR_ERRO), (315, "10", COR_DIGITAL)]
+        leg = self.legenda("O transmissor combina quatro ângulos, cada um "
+                           "valendo dois bits", leg, COR_DIGITAL)
+        pontos, etiquetas = VGroup(), VGroup()
+        for ang, bits, cor in simbolos:
+            a = np.deg2rad(ang)
+            pos = eixos.c2p(A * np.cos(a), A * np.sin(a))
+            d = np.array([np.cos(a), np.sin(a), 0.0])
+            pontos.add(Dot(pos, radius=0.1, color=cor))
+            etiquetas.add(VGroup(
+                Text(bits, font_size=26, color=cor, weight=BOLD),
+                Text(f"{ang}°", font_size=19, color=GREY_A))
+                .arrange(DOWN, buff=0.08).move_to(o + d * (raio + 0.62)))
+        for p, e in zip(pontos, etiquetas):
+            self.play(GrowFromCenter(p), FadeIn(e), run_time=0.6)
+            self.wait(0.5)
+        nome = Text("constelação (QPSK)", font_size=22, color=GREY_A)\
+            .next_to(eixos, UP, buff=0.12)
+        self.play(FadeIn(nome), run_time=0.7)
+        self.wait(1.2)
+
+        # O receptor lê símbolo a símbolo
+        leg = self.legenda("O receptor faz exatamente o que já sabemos: "
+                           "amostra, roda de volta, calcula o ângulo", leg)
+        painel = VGroup(
+            Text("I, Q medidos", font_size=21, color=GREY_A),
+            tex(r"\operatorname{atan}(Q/I)", WHITE, 30),
+            Text("bits", font_size=21, color=GREY_A),
+        ).arrange(DOWN, buff=0.3).move_to(P(3.4, 1.5))
+        self.play(FadeIn(painel), run_time=0.9)
+
+        msg = [0, 2, 3, 1]      # índices dos símbolos transmitidos
+        vetor = seta(o, pontos[msg[0]].get_center(), WHITE, 6)
+        leitura = None
+        recebidos = VGroup()
+        self.play(GrowArrow(vetor), run_time=0.8)
+        for j, idx in enumerate(msg):
+            ang, bits, cor = simbolos[idx]
+            a = np.deg2rad(ang)
+            alvo = eixos.c2p(A * np.cos(a), A * np.sin(a))
+            ci, cq = A * np.cos(a), A * np.sin(a)
+            txt = VGroup(
+                tex(rf"I = {ci:+.2f},\; Q = {cq:+.2f}", cor, 28),
+                tex(rf"\operatorname{{atan}}(Q/I) = {ang}^\circ", cor, 28),
+                Text(f"→  {bits}", font_size=30, color=cor, weight=BOLD),
+            ).arrange(DOWN, buff=0.22).move_to(P(3.4, -0.4))
+            ajustar(txt, 6.8)
+            if leitura is None:
+                leitura = txt
+                self.play(FadeIn(leitura), run_time=0.8)
+            else:
+                # o vetor e a leitura TÊM de andar juntos: separados, havia
+                # um intervalo em que a seta apontava um símbolo e o painel
+                # ainda mostrava o anterior
+                self.play(Transform(vetor, seta(o, alvo, WHITE, 6)),
+                          Transform(leitura, txt), run_time=1.0)
+            b = Text(bits, font_size=26, color=cor, weight=BOLD)
+            recebidos.add(b)
+            recebidos.arrange(RIGHT, buff=0.35).move_to(P(3.4, -2.15))
+            self.play(FadeIn(b, shift=UP * 0.2), run_time=0.5)
+            self.wait(1.1)
+
+        rot_msg = Text("mensagem recebida:", font_size=21, color=GREY_A)\
+            .next_to(recebidos, UP, buff=0.25)
+        self.play(FadeIn(rot_msg), run_time=0.6)
+        self.wait(1.4)
+
+        leg = self.legenda("Mesmo ADC, mesma matriz de rotação, mesma "
+                           "atan(Q/I)", leg, COR_I)
+        self.play(FadeOut(VGroup(eixos, rotulos, circulo, pontos, etiquetas,
+                                 nome, vetor, painel, leitura)), run_time=0.9)
+        self.play(VGroup(recebidos, rot_msg).animate.move_to(P(0, 2.0)),
+                  run_time=1.0)
+        fecho = VGroup(
+            Text("muda só o destino do número:", font_size=26, color=WHITE),
+            Text("no LLRF ele vai para o controlador PI", font_size=24,
+                 color=COR_I),
+            Text("no rádio ele vai para o decodificador", font_size=24,
+                 color=COR_DIGITAL),
+        ).arrange(DOWN, buff=0.3).move_to(P(0, 0.1))
+        ajustar(fecho, 11.0)
+        self.revelar(fecho, pausa=1.3)
+        self.wait(1.0)
+        leg = self.legenda("E cada símbolo tem de durar muitas amostras — "
+                           "é a mesma hipótese de estabilidade", leg, COR_ERRO)
+        self.wait(2.2)
+        self.limpar()
+
+    # ================================================================== CENA 5
     def cena_rotacao(self):
-        self.titulo_cena("4 · Algoritmo de rotação")
+        self.titulo_cena("5 · Algoritmo de rotação")
         nomes = [(r"Q", COR_Q), (r"I", COR_I), (r"-Q", COR_Q), (r"-I", COR_I)]
         caixas = VGroup()
         for k in range(8):
@@ -425,7 +757,7 @@ class IQSampling(Scene):
 
         leg = self.legenda("Fluxo do ADC: o fasor gira 90° a cada amostra")
         self.play(LaggedStart(*[FadeIn(c, shift=DOWN * 0.1) for c in caixas], lag_ratio=0.1), run_time=1.5)
-        leg = self.legenda("Para voltar ao vetor fixo, aplica-se uma rotação inversa ao par (y_{i+1}, y_i)", leg)
+        leg = self.legenda("Para voltar ao vetor fixo, gira-se de volta o par (amostra nova, amostra anterior)", leg)
         self.play(Write(geral), run_time=2)
         self.play(FadeIn(passos))
         self.play(Create(eixos), FadeIn(rotulos), GrowArrow(fasor))
@@ -455,7 +787,7 @@ class IQSampling(Scene):
 
     # ================================================================== CENA 5
     def cena_generalizacao(self):
-        self.titulo_cena("5 · Generalização: f_s = m·f_IF")
+        self.titulo_cena("8 · Generalização: f_s = m·f_IF")
         formula = tex_partes([
             (r"\begin{pmatrix} I \\ Q \end{pmatrix} = ", WHITE),
             (r"\frac{1}{\sin\Delta\phi}", COR_ERRO),
@@ -536,7 +868,7 @@ class IQSampling(Scene):
 
     # ================================================================== CENA 6
     def cena_offset(self):
-        self.titulo_cena("6 · Limitações: offset DC e erro de fase")
+        self.titulo_cena("9 · Limitações: offset DC e erro de fase")
         c = 0.18
         estimativas = [(I0 + c, Q0 + c), (I0 + c, Q0 - c), (I0 - c, Q0 - c), (I0 - c, Q0 + c)]
         amostras_txt = tex_partes([(r"Q+c,\ ", COR_Q), (r"I+c,\ ", COR_I), (r"-Q+c,\ ", COR_Q),
@@ -590,20 +922,20 @@ class IQSampling(Scene):
         enquanto a frequência real sobe sem parar, a frequência aparente vai e
         volta dentro de [0, f_s/2], como uma sanfona.
         """
-        self.titulo_cena("7 · O que é aliasing: a regra da dobra")
+        self.titulo_cena("10 · O que é aliasing: a regra da dobra")
         fs = 4.0
 
         real = NumberLine(x_range=[0, 8, 1], length=11.6, include_numbers=True,
                           font_size=20, color=COR_EIXO).move_to(P(0, 1.9))
+        # abaixo do eixo: acima dele ficam as tracejadas de f_s/2 e f_s
         rot_real = Text("frequência real do sinal   (em unidades de f_IF)",
-                        font_size=21, color=GREY_A).next_to(real, UP, buff=0.3)
+                        font_size=21, color=GREY_A).next_to(real, DOWN, buff=0.45)
         # O eixo aparente usa a MESMA escala: é literalmente o trecho [0, f_s/2]
         aparente = NumberLine(x_range=[0, 2, 0.5], length=11.6 / 4,
                               include_numbers=True, font_size=20,
                               color=COR_DIGITAL).move_to(P(-4.35, -1.5))
-        rot_ap = Text("frequência aparente: o que o ADC entrega",
-                      font_size=21, color=COR_DIGITAL)\
-            .next_to(aparente, DOWN, buff=0.35)
+        rot_ap = Text("o que o ADC entrega", font_size=20, color=COR_DIGITAL)\
+            .next_to(aparente, DOWN, buff=0.45)
 
         l_nyq = DashedLine(real.n2p(2) + DOWN * 0.35, real.n2p(2) + UP * 0.35,
                            color=COR_DIGITAL, stroke_width=3)
@@ -677,7 +1009,8 @@ class IQSampling(Scene):
                  font_size=23, color=COR_ERRO),
             Text("depois de amostrado, não há informação para desfazer isso",
                  font_size=23, color=COR_ERRO2),
-        ).arrange(DOWN, buff=0.25).move_to(P(2.9, -1.6))
+        ).arrange(DOWN, buff=0.25).move_to(P(2.6, -1.75))
+        ajustar(regra, 8.2)
         leg = self.legenda("Essa é a regra inteira do aliasing", leg)
         self.play(LaggedStart(*[FadeIn(r, shift=UP * 0.15) for r in regra],
                               lag_ratio=0.35), run_time=2.4)
@@ -686,13 +1019,13 @@ class IQSampling(Scene):
 
     # ================================================================== CENA 8
     def cena_harmonicas(self):
-        self.titulo_cena("8 · Por que as harmônicas ímpares caem sobre f_IF")
+        self.titulo_cena("11 · Por que as harmônicas ímpares caem sobre f_IF")
         fs = 4.0
         ax = Axes(x_range=[0, 7.6, 1], y_range=[0, 1.25, 0.5], x_length=12.0,
                   y_length=1.7,
                   axis_config={"include_tip": True, "stroke_width": 2,
                                "color": COR_EIXO},
-                  y_axis_config={"include_tip": False}).move_to(P(0, 2.0))
+                  y_axis_config={"include_tip": False}).move_to(P(0, 1.6))
         marcas = marcar_x(ax, range(8), [str(k) for k in range(8)])
         rot_f = Text("f / f_IF", font_size=18, color=COR_EIXO)\
             .next_to(ax.x_axis.get_end(), UP, buff=0.12)
@@ -761,8 +1094,10 @@ class IQSampling(Scene):
                       FadeOut(rots[k]), run_time=1.0 if k <= 4 else 0.7)
             if cai:
                 self.play(Indicate(novos[k], color=COR_ERRO), run_time=0.5)
-            etq = Text(f"{k}ª", font_size=15, color=cor)\
-                .next_to(ax.c2p(pos[k], ALTURAS[k]), UP, buff=0.05)
+            # as que caem juntas precisam de alturas diferentes
+            etq = Text(f"{k}ª", font_size=16, color=cor)\
+                .next_to(ax.c2p(pos[k], ALTURAS[k]), UP,
+                         buff=0.06 + 0.3 * ((k - 2) % 3))
             etiquetas.add(etq)
             self.play(FadeIn(etq), run_time=0.3)
 
@@ -829,7 +1164,7 @@ class IQSampling(Scene):
                  line_spacing=0.9),
             Text("os mesmos 4 pontos, na ordem inversa → amostras idênticas",
                  font_size=24, color=COR_ERRO),
-        ).arrange(DOWN, buff=0.25).move_to(P(0, -2.2))
+        ).arrange(DOWN, buff=0.25).move_to(P(0, -1.9))
         leg = self.legenda("É o efeito da roda de carroça do cinema: "
                            "a roda parece girar ao contrário", leg, COR_ERRO)
         self.play(LaggedStart(*[FadeIn(c, shift=UP * 0.15) for c in conclusao],
@@ -885,9 +1220,10 @@ class IQSampling(Scene):
         r1 = Text("sinal", font_size=20, color=COR_RF)\
             .next_to(eixos.c2p(*v1), UP, buff=0.12)
         r3 = Text("3ª harmônica", font_size=19, color=COR_ERRO)\
-            .next_to(eixos.c2p(*vr), RIGHT, buff=0.12)
+            .next_to(eixos.c2p(*vr), UR, buff=0.14)
         rr = Text("o que você mede", font_size=20, color=COR_ERRO2)\
-            .next_to(eixos.c2p(*vr), DOWN, buff=0.2)
+            .move_to(eixos.c2p(-0.35, -0.95))
+        guia_rr = tracejada(rr.get_top(), eixos.c2p(*vr), COR_ERRO2, 2)
         ang1 = float(np.arctan2(v1[1], v1[0]))
         angr = float(np.arctan2(vr[1], vr[0]))
         arco_err = arco_angulo(o, 1.0, angr, ang1 - angr, COR_ERRO2, 4)
@@ -895,7 +1231,8 @@ class IQSampling(Scene):
         self.play(Create(eixos), FadeIn(rotulos), run_time=0.8)
         self.play(GrowArrow(f1), FadeIn(r1), run_time=0.8)
         self.play(GrowArrow(f3), FadeIn(r3), run_time=0.9)
-        self.play(GrowArrow(fr), FadeIn(rr), Create(arco_err), run_time=1.1)
+        self.play(GrowArrow(fr), FadeIn(rr), Create(guia_rr),
+                  Create(arco_err), run_time=1.1)
 
         impacto = VGroup(
             Text("a harmônica vira um fasor em f_IF e se SOMA ao sinal",
@@ -907,7 +1244,8 @@ class IQSampling(Scene):
             Text("e o erro gira junto com a fase do sinal:\n"
                  "não é offset, não dá para calibrar fora",
                  font_size=22, color=GREY_A, line_spacing=0.9),
-        ).arrange(DOWN, buff=0.28).move_to(P(3.2, -0.2))
+        ).arrange(DOWN, buff=0.28).move_to(P(3.1, -0.2))
+        ajustar(impacto, 6.8)
         self.play(LaggedStart(*[FadeIn(i, shift=RIGHT * 0.2) for i in impacto],
                               lag_ratio=0.3), run_time=2.6)
         self.wait(2.0)
@@ -916,7 +1254,7 @@ class IQSampling(Scene):
         leg = self.legenda("Aliasing não se conserta depois. Só se previne.",
                            leg, COR_DIGITAL)
         self.play(FadeOut(VGroup(eixos, rotulos, f1, f3, fr, r1, r3, rr,
-                                 arco_err, impacto)), run_time=0.8)
+                                 guia_rr, arco_err, impacto)), run_time=0.8)
         saidas = VGroup(
             Text("Quatro saídas, todas antes da amostragem:", font_size=27,
                  color=WHITE),

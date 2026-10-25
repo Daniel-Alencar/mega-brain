@@ -16,7 +16,7 @@ O repositório tem duas partes que andam juntas:
 | Componentes de um sistema de RF | [.md](docs/Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md) | [componentes_sistema_rf.py](src/Componentes%20de%20um%20sistema%20de%20RF/componentes_sistema_rf.py) | `ComponentesSistemaRF` | ~4 min |
 | Modelagem de uma cavidade de RF | [.md](docs/Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md) | [modelagem_cavidade.py](src/Modelagem%20de%20uma%20cavidade%20de%20RF/modelagem_cavidade.py) | `ModelagemCavidade` | ~3 min |
 | Filtros | [.md](docs/Filtros/Filtros.md) | [filtros.py](src/Filtros/filtros.py) | `Filtros` | ~3 min |
-| Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~4 min |
+| Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~9 min |
 | Detecção de amplitude e fase: Non-IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
 | Detecção de amplitude e fase: Digital Down Conversion | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
 | DDC: Decimador | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Decimador.md) | [decimador.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/decimador.py) | `Decimador` | ~2 min |
@@ -79,25 +79,67 @@ existe no repositório e apontam para ele em vez de repeti-lo.
 
 ### IQ sampling
 
+A ordem abaixo é a do vídeo.
+
 1. **Polar × cartesiana.** `A·sin(ωt + φ0) = I·sin ωt + Q·cos ωt` e o fasor (I, Q).
 2. **O que o ADC mede.** Só a projeção vertical do fasor: uma amostra define uma
    reta; duas amostras a 90° definem o ponto (I, Q).
 3. **f_s = 4·f_IF.** O fasor avança 90° por amostra e o ADC entrega Q, I, −Q, −I, …
-4. **Algoritmo de rotação.** Janela de 2 amostras e matrizes só com 0 e ±1.
-5. **Generalização f_s = m·f_IF.** Cada amostra é uma faixa (± ruído); a incerteza
-   no cruzamento cresce com `1/|sin Δφ|`.
-6. **Offset DC.** O erro troca de sinal a cada passo: o ponto (I, Q) salta num
+4. **Os quatro vetores do par de amostras.** Cada par `(y_{i+1}, y_i)` é um ponto
+   do plano I/Q, e os quatro ficam a 90° um do outro. Uma cópia do primeiro gira
+   na tela e pousa sobre o segundo, mostrando que `(I,Q) → (−Q,I)` e não
+   `(−I,Q)`. Fecha com a leitura correta da notação: as letras são comprimentos
+   medidos em t₀, girados para os novos eixos — não o nome do eixo onde a ponta
+   está.
+5. **Algoritmo de rotação.** Janela de 2 amostras e matrizes só com 0 e ±1.
+6. **Primeiro uso: detectar um erro de fase.** Referência I=1, Q=1 → 45°. Entra
+   uma perturbação de 10°, as amostras viram 0,81 e 1,16, e a leitura cai para
+   35° com a amplitude intacta: o ponto desliza sobre o círculo. A malha age
+   sobre a diferença.
+7. **Segundo uso: ler uma mensagem na fase.** Constelação QPSK (45°=00, 135°=01,
+   225°=11, 315°=10); o receptor amostra, roda de volta, calcula atan(Q/I) e
+   traduz em bits. Mesmo hardware, outro destino.
+8. **Generalização f_s = m·f_IF.** Cada amostra é uma faixa (± ruído); a
+   incerteza no cruzamento cresce com `1/|sin Δφ|`.
+9. **Offset DC.** O erro troca de sinal a cada passo: o ponto (I, Q) salta num
    quadrado e aparece ripple em f_IF.
-7. **O que é aliasing.** A regra da dobra, antes de qualquer harmônica: uma
-   varredura lenta mostra a frequência real subindo sem parar enquanto a
-   aparente vai e volta dentro de [0, f_s/2], como uma sanfona. Termina com
-   1, 3, 5 e 7·f_IF convergindo todas para o mesmo ponto.
-8. **Harmônicas ímpares sobre f_IF.** A regra é aplicada uma harmônica de cada
-   vez, com a aritmética na tela (`3 mod 4 = 3 > 2 ⇒ 4 − 3 = 1`); depois o
-   porquê no círculo (`3×90° = 270° ≡ −90°`, o efeito da roda de carroça), a
-   prova no tempo (as duas curvas passam pelos mesmos 9 pontos), o estrago no
-   fasor medido (`Δφ ≈ A₃/A₁`, −40 dBc → 0,57°) e as quatro saídas possíveis.
-9. **Resumo.**
+10. **O que é aliasing.** A regra da dobra, antes de qualquer harmônica: uma
+    varredura lenta mostra a frequência real subindo sem parar enquanto a
+    aparente vai e volta dentro de [0, f_s/2], como uma sanfona. Termina com
+    1, 3, 5 e 7·f_IF convergindo todas para o mesmo ponto.
+11. **Harmônicas ímpares sobre f_IF.** A regra é aplicada uma harmônica de cada
+    vez, com a aritmética na tela (`3 mod 4 = 3 > 2 ⇒ 4 − 3 = 1`); depois o
+    porquê no círculo (`3×90° = 270° ≡ −90°`, o efeito da roda de carroça), a
+    prova no tempo (as duas curvas passam pelos mesmos 9 pontos), o estrago no
+    fasor medido (`Δφ ≈ A₃/A₁`, −40 dBc → 0,57°) e as quatro saídas possíveis.
+12. **Resumo.**
+
+Para gerar o vídeo, a partir da raiz do repositório:
+
+```bash
+source venv/bin/activate
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0   # veja Problemas comuns
+
+manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # rascunho 480p
+manim -pqh "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # final 1080p
+```
+
+O arquivo sai em `media/videos/iq_sampling/480p15/IQSampling.mp4` (ou `1080p60/`
+com `-qh`), e o `-p` abre o vídeo assim que ele fica pronto.
+
+Na mesma pasta, [`iq_sampling.ipynb`](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.ipynb)
+reproduz numericamente **todas as cenas acima**, na mesma ordem: a identidade
+polar ↔ cartesiana, a amostragem em `f_s = 4·f_IF`, os quatro pares
+`(y_{i+1}, y_i)`, a matriz de rotação, a detecção de erro de fase, a demodulação
+QPSK, a amplificação de ruído `1/|sin Δφ|`, o ripple do offset DC, a regra da
+dobra e o aliasing das harmônicas ímpares. Serve para mexer nos parâmetros e ver
+o efeito — algo que o vídeo, sendo fixo, não permite.
+
+```bash
+jupyter lab "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.ipynb"
+```
+
+Requer apenas `numpy` e `matplotlib` (mais `jupyter` para abrir o caderno).
 
 ### Non-IQ sampling
 
