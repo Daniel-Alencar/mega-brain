@@ -595,11 +595,13 @@ class IQSampling(Scene):
         self.revelar(malha, pausa=1.4)
         self.wait(1.2)
 
-        ressalva = Text("durante o salto, o par que pisa nos dois estados\n"
-                        "dá uma leitura intermediária — é a hipótese de\n"
-                        "amplitude e fase quase constantes entre amostras",
+        ressalva = Text("durante o salto, o par que pisa nos dois\n"
+                        "estados dá uma leitura intermediária:\n"
+                        "é a hipótese de amplitude e fase quase\n"
+                        "constantes entre duas amostras",
                         font_size=20, color=GREY_A, line_spacing=0.9)\
-            .move_to(P(-3.7, Y_BASE - 0.15))
+            .move_to(P(3.3, -0.55))
+        self.play(FadeOut(novo), run_time=0.6)
         self.play(FadeIn(ressalva, shift=UP * 0.15), run_time=1.0)
         self.wait(2.2)
         self.limpar()
@@ -647,7 +649,7 @@ class IQSampling(Scene):
             self.play(GrowFromCenter(p), FadeIn(e), run_time=0.6)
             self.wait(0.5)
         nome = Text("constelação (QPSK)", font_size=22, color=GREY_A)\
-            .next_to(eixos, UP, buff=0.12)
+            .next_to(eixos, DOWN, buff=0.08).align_to(eixos, LEFT)
         self.play(FadeIn(nome), run_time=0.7)
         self.wait(1.2)
 
@@ -928,8 +930,11 @@ class IQSampling(Scene):
         real = NumberLine(x_range=[0, 8, 1], length=11.6, include_numbers=True,
                           font_size=20, color=COR_EIXO).move_to(P(0, 1.9))
         # abaixo do eixo: acima dele ficam as tracejadas de f_s/2 e f_s
-        rot_real = Text("frequência real do sinal   (em unidades de f_IF)",
-                        font_size=21, color=GREY_A).next_to(real, DOWN, buff=0.45)
+        # acima do eixo e à direita: abaixo dele passam as ligações e as
+        # setas curvas que descem até o eixo aparente
+        rot_real = Text("frequência real  (× f_IF)", font_size=21,
+                        color=GREY_A).next_to(real, UP, buff=0.3)\
+            .align_to(real, RIGHT)
         # O eixo aparente usa a MESMA escala: é literalmente o trecho [0, f_s/2]
         aparente = NumberLine(x_range=[0, 2, 0.5], length=11.6 / 4,
                               include_numbers=True, font_size=20,
@@ -937,10 +942,10 @@ class IQSampling(Scene):
         rot_ap = Text("o que o ADC entrega", font_size=20, color=COR_DIGITAL)\
             .next_to(aparente, DOWN, buff=0.45)
 
-        l_nyq = DashedLine(real.n2p(2) + DOWN * 0.35, real.n2p(2) + UP * 0.35,
+        l_nyq = DashedLine(real.n2p(2), real.n2p(2) + UP * 0.4,
                            color=COR_DIGITAL, stroke_width=3)
         r_nyq = tex(r"f_s/2", COR_DIGITAL, 24).next_to(l_nyq, UP, buff=0.05)
-        l_fs = DashedLine(real.n2p(4) + DOWN * 0.35, real.n2p(4) + UP * 0.35,
+        l_fs = DashedLine(real.n2p(4), real.n2p(4) + UP * 0.4,
                           color=GREY_B, stroke_width=2)
         r_fs = tex(r"f_s", GREY_B, 24).next_to(l_fs, UP, buff=0.05)
 
@@ -958,7 +963,7 @@ class IQSampling(Scene):
             lambda: Dot(aparente.n2p(alias(f.get_value(), fs)), radius=0.11,
                         color=COR_ERRO))
         lig = always_redraw(
-            lambda: tracejada(real.n2p(f.get_value()),
+            lambda: tracejada(real.n2p(f.get_value()) + DOWN * 0.5,
                               aparente.n2p(alias(f.get_value(), fs)),
                               GREY_B, 2))
         painel = always_redraw(
@@ -1021,14 +1026,18 @@ class IQSampling(Scene):
     def cena_harmonicas(self):
         self.titulo_cena("11 · Por que as harmônicas ímpares caem sobre f_IF")
         fs = 4.0
+        # Layout em três faixas, sem sobreposição:
+        #   espectro .......... y de 0,35 (eixo) até 2,6 (rótulos f_s/2, f_s)
+        #   números do eixo ... y ~ 0,1
+        #   contas e regra .... y abaixo de -0,3
         ax = Axes(x_range=[0, 7.6, 1], y_range=[0, 1.25, 0.5], x_length=12.0,
-                  y_length=1.7,
+                  y_length=2.0,
                   axis_config={"include_tip": True, "stroke_width": 2,
                                "color": COR_EIXO},
-                  y_axis_config={"include_tip": False}).move_to(P(0, 1.6))
+                  y_axis_config={"include_tip": False}).move_to(P(0, 1.35))
         marcas = marcar_x(ax, range(8), [str(k) for k in range(8)])
         rot_f = Text("f / f_IF", font_size=18, color=COR_EIXO)\
-            .next_to(ax.x_axis.get_end(), UP, buff=0.12)
+            .next_to(ax.x_axis.get_end(), DOWN, buff=0.18)
         zona = Polygon(ax.c2p(0, 0), ax.c2p(0, 1.2), ax.c2p(fs / 2, 1.2),
                        ax.c2p(fs / 2, 0), stroke_width=0,
                        fill_color=COR_DIGITAL, fill_opacity=0.12)
@@ -1040,9 +1049,12 @@ class IQSampling(Scene):
         r_fs = tex(r"f_s", GREY_B, 24).next_to(l_fs, UP, buff=0.06)
         raias = {k: raia(ax, k, ALTURAS[k], COR_I if k == 1 else GREY_B)
                  for k in range(1, 8)}
-        rots = {k: Text(f"{k}ª", font_size=16,
+        # a fundamental leva o rótulo em cima; as outras à direita da ponta,
+        # para não caírem sobre as tracejadas de f_s/2 (k=2) e f_s (k=4)
+        rots = {k: Text(f"{k}ª", font_size=17,
                         color=COR_I if k == 1 else GREY_A)
-                .next_to(ax.c2p(k, ALTURAS[k]), UP, buff=0.06)
+                .next_to(ax.c2p(k, ALTURAS[k]), UP if k == 1 else RIGHT,
+                         buff=0.08)
                 for k in range(1, 8)}
 
         leg = self.legenda("Mixers e ADCs não são perfeitamente lineares: "
@@ -1053,10 +1065,12 @@ class IQSampling(Scene):
                                                FadeIn(rots[k]))
                                 for k in range(2, 8)], lag_ratio=0.2),
                   run_time=2)
+        self.wait(1.0)
         leg = self.legenda("Com f_s = 4·f_IF, Nyquist fica em 2·f_IF — "
                            "tudo à direita vai dobrar", leg, COR_DIGITAL)
         self.play(FadeIn(zona), Create(l_nyq), FadeIn(r_nyq), Create(l_fs),
                   FadeIn(r_fs))
+        self.wait(1.0)
 
         # ------------------------------------------- uma harmônica de cada vez
         pos, grupos = posicoes_alias(fs)
@@ -1070,6 +1084,11 @@ class IQSampling(Scene):
             7: (r"7 \bmod 4 = 3 > 2 \;\Rightarrow\; 4-3 = 1",
                 "cai sobre f_IF", COR_ERRO),
         }
+        # Várias raias caem no MESMO ponto (0, 1 ou 2·f_IF). Em vez de um
+        # rótulo por raia — que se encavalam —, cada aglomerado ganha uma
+        # pilha de rótulos à sua direita, de cima para baixo.
+        pilha_x = {0: 0.32, 1: 1.45, 2: 2.42}
+        pilha_n = {0: 0, 1: 0, 2: 0}
         novos, etiquetas = {}, VGroup()
         conta_atual, texto_atual = None, None
         leg = self.legenda("Aplicando a regra da dobra, uma harmônica "
@@ -1077,29 +1096,31 @@ class IQSampling(Scene):
         for k in range(2, 8):
             formula, veredito, cor = contas[k]
             nova_conta = tex(rf"{k}^a:\quad {formula}", WHITE, 32)\
-                .move_to(P(-2.6, 0.55))
+                .move_to(P(-2.8, -0.6))
             novo_texto = Text(veredito, font_size=26, color=cor)\
-                .move_to(P(2.9, 0.55))
+                .move_to(P(3.3, -0.6))
             if conta_atual is None:
                 conta_atual, texto_atual = nova_conta, novo_texto
                 self.play(Write(conta_atual), FadeIn(texto_atual), run_time=1.0)
             else:
                 self.play(Transform(conta_atual, nova_conta),
                           Transform(texto_atual, novo_texto), run_time=0.8)
+            self.wait(0.6)
             cai = abs(alias(k, fs) - 1) < 1e-6
             novos[k] = raia(ax, pos[k], ALTURAS[k],
                             COR_ERRO if cai else GREY_B)
             self.play(ReplacementTransform(raias[k], novos[k],
                                            path_arc=PI / 2),
-                      FadeOut(rots[k]), run_time=1.0 if k <= 4 else 0.7)
+                      FadeOut(rots[k]), run_time=1.0 if k <= 4 else 0.8)
             if cai:
                 self.play(Indicate(novos[k], color=COR_ERRO), run_time=0.5)
-            # as que caem juntas precisam de alturas diferentes
-            etq = Text(f"{k}ª", font_size=16, color=cor)\
-                .next_to(ax.c2p(pos[k], ALTURAS[k]), UP,
-                         buff=0.06 + 0.3 * ((k - 2) % 3))
+            dest = int(round(float(alias(k, fs))))
+            etq = Text(f"{k}ª", font_size=17, color=cor)\
+                .move_to(ax.c2p(pilha_x[dest], 1.1) + DOWN * 0.3 * pilha_n[dest])
+            pilha_n[dest] += 1
             etiquetas.add(etq)
-            self.play(FadeIn(etq), run_time=0.3)
+            self.play(FadeIn(etq), run_time=0.4)
+            self.wait(0.6)
 
         self.play(FadeOut(VGroup(conta_atual, texto_atual)), run_time=0.6)
         regra = VGroup(
@@ -1110,12 +1131,11 @@ class IQSampling(Scene):
                  font_size=26, color=COR_ERRO),
             Text("e a 3ª é justamente a mais forte num circuito balanceado",
                  font_size=22, color=GREY_A),
-        ).arrange(DOWN, buff=0.25).move_to(P(0, 0.4))
+        ).arrange(DOWN, buff=0.25).move_to(P(0, -1.25))
         leg = self.legenda("E não é coincidência — é uma propriedade do "
                            "divisor 4", leg, COR_ERRO)
-        self.play(LaggedStart(*[FadeIn(r, shift=UP * 0.15) for r in regra],
-                              lag_ratio=0.35), run_time=2.2)
-        self.wait(1.8)
+        self.revelar(regra, pausa=1.2, desloc=UP * 0.15)
+        self.wait(1.2)
 
         # --------------------------- por quê: 4 pontos por volta (roda de carroça)
         leg = self.legenda("Por que isso acontece? Amostrar 4 vezes por "
@@ -1124,8 +1144,8 @@ class IQSampling(Scene):
                                  r_fs, raias[1], rots[1], regra, etiquetas,
                                  *[novos[k] for k in novos])), run_time=0.9)
 
-        R = 1.3
-        c1, c2 = P(-3.5, 0.3), P(3.5, 0.3)
+        R = 1.25
+        c1, c2 = P(-3.5, 0.5), P(3.5, 0.5)
         grupos_circ = VGroup()
         setas_g = []
         for centro, titulo_txt, cor in (
@@ -1137,7 +1157,7 @@ class IQSampling(Scene):
                                   radius=0.07, color=COR_EIXO)
                               for a in (0, PI / 2, PI, 3 * PI / 2)])
             rot = Text(titulo_txt, font_size=21, color=cor)\
-                .next_to(circ, UP, buff=0.35)
+                .next_to(circ, UP, buff=0.65)
             s = seta(centro, centro + R * RIGHT, cor, 5)
             setas_g.append(s)
             grupos_circ.add(VGroup(circ, marcos, rot, s))
@@ -1152,9 +1172,9 @@ class IQSampling(Scene):
             for centro, s in ((c1, setas_g[0]), (c2, setas_g[1])):
                 ponta = s.get_end()
                 marcados.add(Dot(ponta, radius=0.09, color=COR_AMOSTRA))
+                direcao = (ponta - centro) / np.linalg.norm(ponta - centro)
                 marcados.add(Text(str(j), font_size=18, color=COR_AMOSTRA)
-                             .move_to(centro + 1.38 * (ponta - centro) / R
-                                      * (R / np.linalg.norm(ponta - centro))))
+                             .move_to(centro + (R + 0.36) * direcao))
             self.play(FadeIn(marcados[-4:]), run_time=0.4)
 
         conclusao = VGroup(
@@ -1164,7 +1184,7 @@ class IQSampling(Scene):
                  line_spacing=0.9),
             Text("os mesmos 4 pontos, na ordem inversa → amostras idênticas",
                  font_size=24, color=COR_ERRO),
-        ).arrange(DOWN, buff=0.25).move_to(P(0, -1.9))
+        ).arrange(DOWN, buff=0.2).move_to(P(0, -2.0))
         leg = self.legenda("É o efeito da roda de carroça do cinema: "
                            "a roda parece girar ao contrário", leg, COR_ERRO)
         self.play(LaggedStart(*[FadeIn(c, shift=UP * 0.15) for c in conclusao],
@@ -1222,7 +1242,7 @@ class IQSampling(Scene):
         r3 = Text("3ª harmônica", font_size=19, color=COR_ERRO)\
             .next_to(eixos.c2p(*vr), UR, buff=0.14)
         rr = Text("o que você mede", font_size=20, color=COR_ERRO2)\
-            .move_to(eixos.c2p(-0.35, -0.95))
+            .move_to(eixos.c2p(1.0, -0.6))
         guia_rr = tracejada(rr.get_top(), eixos.c2p(*vr), COR_ERRO2, 2)
         ang1 = float(np.arctan2(v1[1], v1[0]))
         angr = float(np.arctan2(vr[1], vr[0]))

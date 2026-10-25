@@ -359,8 +359,8 @@ Constantes específicas:
 | `non_iq_sampling.py` | `N`, `M` | razão de amostragem `f_s/f_IF = N/M` (padrão 9/2) |
 | `non_iq_sampling.py` | `SIGMA` | ruído das amostras nas cenas de mínimos quadrados e de ruído |
 | `modelagem_cavidade.py` | `Q_CARREGADO` | fator de qualidade do gráfico de \|Z(jω)\| |
-| `mixer.py`, `mixer_plot.py` | `F_RF`, `F_LO` | frequências de RF e do LO (padrão 100 e 130 MHz) |
-| `mixer.py`, `mixer_plot.py` | `COEFS` | coeficientes do polinômio de transferência do mixer real |
+| `mixer.py` | `F_RF`, `F_LO` | frequências de RF e do LO (padrão 100 e 130 MHz) |
+| `mixer.py` | `COEFS` | coeficientes do polinômio de transferência do mixer real |
 | `mixer.py` | `FD_RF`, `FD_LO` | frequências reduzidas usadas nas cenas no domínio do tempo |
 
 Valores numéricos marcados como ilustrativos ou exagerados (tolerâncias, número

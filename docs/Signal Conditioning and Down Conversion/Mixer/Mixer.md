@@ -177,6 +177,4 @@ Cada nanossegundo gasto filtrando é banda de controle perdida. E é justamente 
 
 **Conclusão prática.** O polinômio de Taylor nunca desaparece do sistema completo — ele apenas deixa de estar no estágio de mistura, migrando para o front-end analógico e para a não linearidade do próprio ADC (que tipicamente limita o SFDR do sistema em 70–85 dBc). Por isso a arquitetura moderna empurra o ADC o mais perto possível do pickup: cada mixer analógico eliminado é uma família inteira de espúrios a menos para filtrar, e um filtro a menos no orçamento de latência da malha.
 
-**Animação correspondente:** [`Mixer.py`](../../../src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer.py), cena `Mixer`.
-
-**Simulação numérica:** [`Mixer_plot.py`](../../../src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer_plot.py) gera os quatro espectros, identifica automaticamente o par $(m,n)$ de cada raia e mede o SFDR e o atraso de grupo.
+**Animação correspondente:** [`mixer.py`](../../../src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/mixer.py), cena `Mixer`.

@@ -4,8 +4,8 @@ Mixer de RF: por que a multiplicação cria uma família inteira de espúrios
 =========================================================================
 
 Renderização (a partir da raiz do repositório):
-    manim -pql "src/Signal Conditioning and Down Conversion/Mixer/Mixer.py" Mixer   # rascunho
-    manim -pqh "src/Signal Conditioning and Down Conversion/Mixer/Mixer.py" Mixer   # final
+    manim -pql "src/Signal Conditioning and Down Conversion/Mixer/mixer.py" Mixer   # rascunho
+    manim -pqh "src/Signal Conditioning and Down Conversion/Mixer/mixer.py" Mixer   # final
 
 Requer LaTeX (MathTex).
 
@@ -19,9 +19,6 @@ Roteiro:
     Cena 6 - No FPGA a multiplicação é de verdade (DDS, quantização, f_s/4)
     Cena 7 - O preço da limpeza: atraso de grupo
     Resumo
-
-A simulação numérica correspondente (espectros em matplotlib, tabela de
-espúrios e atraso de grupo) está em Mixer_plot.py, na mesma pasta.
 
 Layout: a tela é dividida em faixas fixas para que nada se sobreponha.
     y > 3.0   : título da cena (canto superior esquerdo)
@@ -56,7 +53,7 @@ Y_TOPO = 2.70            # nada de conteúdo acima disto: a linha do título mor
 Y_BASE = -2.55           # nada de conteúdo abaixo disto: a narração mora em ~-3.5
 LARG_MAX = 12.6          # largura máxima de qualquer fórmula
 
-# Mesmos números da simulação Mixer_plot.py, em MHz
+# Frequências do exemplo, em MHz
 F_RF, F_LO, FS = 100.0, 130.0, 2000.0
 F_IF = abs(F_LO - F_RF)          # 30 MHz
 F_IMG = 2 * F_LO - F_RF          # 160 MHz
@@ -254,44 +251,117 @@ class Mixer(Scene):
         self.wait(0.3)
 
     # --------------------------------------------------- eixos de espectro
-    def eixo_espectro(self, centro, largura=11.4, altura=3.0, piso=-80, topo=10):
-        """Eixo de espectro com números e rótulo que nunca se encavalam."""
-        ax = eixos(centro, largura, altura, [0, F_MAX, 100], [piso, topo, 20])
-        marcas = marcar_x(ax, [0, 100, 200, 300, 400, 500], piso)
-        rot_x = Text("frequência [MHz]", font_size=20, color=GREY_A)\
-            .next_to(marcas, DOWN, buff=0.12)
-        rot_y = Text("amplitude [dB]", font_size=19, color=GREY_A)\
-            .rotate(PI / 2).next_to(ax, LEFT, buff=0.12)
-        return ax, VGroup(marcas, rot_x, rot_y)
+    def eixo_espectro(self, centro, largura=11.4, altura=3.0, piso=-80, topo=10,
+                      rot_x=True, rot_y=True, tamanho=18):
+        """Eixo de espectro em dB, com a linha de base no PISO.
 
-    def desenhar_raias(self, ax, itens, piso, sep=48, tamanho=16,
-                       destaque=None, opacidade=1.0):
-        """Raias com rótulos escalonados em três alturas e linha-guia.
-
-        Sem o escalonamento, vizinhas como RF (100) e LO (130) escrevem uma
-        por cima da outra — foi o que aconteceu na primeira versão.
+        Com o eixo y indo de −80 a +10 dB, o Manim desenha o eixo x em 0 dB,
+        isto é, no topo do gráfico — e ele cortava os rótulos das raias. Aqui
+        o eixo automático fica invisível e a base é desenhada no piso.
         """
+        ax = eixos(centro, largura, altura, [0, F_MAX, 100], [piso, topo, 20])
+        ax.x_axis.set_opacity(0)
+        base = Line(ax.c2p(0, piso), ax.c2p(F_MAX, piso), color=COR_EIXO,
+                    stroke_width=2)
+        tiques = VGroup(*[Line(ax.c2p(f, piso), ax.c2p(f, piso) + DOWN * 0.1,
+                               color=COR_EIXO, stroke_width=2)
+                          for f in range(0, int(F_MAX) + 1, 100)])
+        marcas = VGroup(*[Text(f"{f}", font_size=tamanho, color=GREY_B)
+                          .next_to(ax.c2p(f, piso), DOWN, buff=0.18)
+                          for f in range(0, int(F_MAX) + 1, 100)])
+        deco = VGroup(base, tiques, marcas)
+        if rot_x:
+            deco.add(Text("frequência [MHz]", font_size=20, color=GREY_A)
+                     .next_to(marcas, DOWN, buff=0.12))
+        if rot_y:
+            deco.add(Text("amplitude [dB]", font_size=19, color=GREY_A)
+                     .rotate(PI / 2).next_to(ax, LEFT, buff=0.12))
+        ax.ocupado = []      # rótulos já postos na faixa: (x0, x1, nível)
+        ax.guias = []        # linhas-guia já postas: (x, nível do rótulo)
+        return ax, deco
+
+    def reservar(self, ax, x0, x1, niveis, passo=0.3):
+        """Marca um trecho da faixa de rótulos como ocupado (ex.: um título)."""
+        base = ax.c2p(0, ax.y_range[1])[1] + 0.3
+        ax.ocupado.append((x0, x1, base - 0.2, base + niveis * passo))
+
+    def desenhar_raias(self, ax, itens, piso, tamanho=16, destaque=None,
+                       opacidade=1.0, max_niveis=3, passo=0.3):
+        """Raias com os rótulos numa faixa ACIMA do gráfico.
+
+        Cada rótulo procura uma posição livre: primeiro com linha-guia
+        vertical, no nível mais baixo possível; se nenhuma servir, desloca o
+        rótulo para o lado com a guia inclinada. Uma posição só é aceita se
+          - a caixa do rótulo não encosta em nada já ocupado (rótulos,
+            reservas, hastes);
+          - a guia não atravessa nenhum rótulo nem haste vizinha;
+          - nenhuma guia já existente atravessa a caixa do rótulo.
+        O estado fica guardado no eixo: chamadas sucessivas no mesmo gráfico
+        (ordem 1, depois 2, ...) também respeitam o que já está lá. Se não
+        houver lugar, a raia fica sem rótulo em vez de escrever por cima.
+        """
+        def sobrepoe(a, b):
+            return a[0] < b[1] and b[0] < a[1] and a[2] < b[3] and b[2] < a[3]
+
+        def cruza(p0, p1, caixa, folga=0.03):
+            x0, x1, y0, y1 = caixa
+            for t in np.linspace(0, 1, 30):
+                x = p0[0] + t * (p1[0] - p0[0])
+                y = p0[1] + t * (p1[1] - p0[1])
+                if x0 - folga < x < x1 + folga and y0 - folga < y < y1 + folga:
+                    return True
+            return False
+
+        base = ax.c2p(0, ax.y_range[1])[1] + 0.3
+        x_min, x_max = ax.c2p(0, piso)[0], ax.c2p(F_MAX, piso)[0]
+        y_piso = ax.c2p(0, piso)[1]
         grupo = VGroup()
-        nivel, f_ant = 0, -1e9
         for f, m, n in sorted(itens):
             db = max(nivel_db(f), piso + 4)
             if db < piso + 2:
                 continue
             cor = cor_raia(m, n)
-            nivel = (nivel + 1) % 3 if f - f_ant < sep else 0
-            f_ant = f
-            topo = ax.c2p(f, db)
-            alvo = topo + UP * (0.22 + nivel * 0.34)
-            rot = Text(rotular(m, n), font_size=tamanho, color=cor).move_to(alvo)
-            guia = Line(topo, alvo + DOWN * 0.13, color=cor,
-                        stroke_width=1.2).set_opacity(0.45)
-            grupo.add(VGroup(haste(ax, f, db, cor, piso), guia, rot))
+            ponta = ax.c2p(f, db)
+            x = ponta[0]
+            rot = Text(rotular(m, n), font_size=tamanho, color=cor)
+            meia, meia_h = rot.width / 2 + 0.07, rot.height / 2 + 0.04
+            escolhido = None
+            for dx in (0.0, 0.32, -0.32, 0.64, -0.64):
+                for nivel in range(max_niveis):
+                    xc, y = x + dx, base + nivel * passo
+                    caixa = (xc - meia, xc + meia, y - meia_h, y + meia_h)
+                    if caixa[0] < x_min - 0.2 or caixa[1] > x_max + 0.4:
+                        continue
+                    pe = (xc, y - meia_h)
+                    if any(sobrepoe(caixa, c) for c in ax.ocupado):
+                        continue
+                    if any(cruza(ponta, pe, c) for c in ax.ocupado):
+                        continue
+                    if any(cruza(g0, g1, caixa) for g0, g1 in ax.guias):
+                        continue
+                    escolhido = (xc, y, caixa, pe)
+                    break
+                if escolhido:
+                    break
+            partes = [haste(ax, f, db, cor, piso)]
+            if escolhido:
+                xc, y, caixa, pe = escolhido
+                rot.move_to([xc, y, 0])
+                ax.ocupado.append(caixa)
+                ax.guias.append((ponta, pe))
+                partes.append(Line(ponta, np.array([pe[0], pe[1], 0.0]),
+                                   color=cor, stroke_width=1.2).set_opacity(0.45))
+                partes.append(rot)
+            # a haste também passa a ser obstáculo para as guias seguintes
+            ax.ocupado.append((x - 0.03, x + 0.03, y_piso, ponta[1]))
+            grupo.add(VGroup(*partes))
         if opacidade < 1.0:
             grupo.set_opacity(opacidade)
-        self.play(LaggedStart(*[AnimationGroup(GrowFromEdge(g[0], DOWN),
-                                               Create(g[1]), FadeIn(g[2]))
-                                for g in grupo], lag_ratio=0.3),
-                  run_time=0.5 + 0.35 * len(grupo))
+        self.play(LaggedStart(*[AnimationGroup(
+            GrowFromEdge(g[0], DOWN),
+            *([Create(g[1]), FadeIn(g[2])] if len(g) > 1 else []))
+            for g in grupo], lag_ratio=0.3),
+            run_time=0.5 + 0.35 * len(grupo))
         if destaque is not None:
             self.play(*[Indicate(g[0], color=destaque, scale_factor=1.12)
                         for g in grupo], run_time=1.0)
@@ -420,23 +490,25 @@ class Mixer(Scene):
             30)).move_to(P(0, Y_TOPO))
         leg = self.legenda("É uma identidade trigonométrica — nada além disso",
                            leg)
-        self.play(FadeOut(VGroup(ax_if, o_if, r3)), run_time=0.8)
+        # o espectro vem depois: TUDO o que é do domínio do tempo sai agora
+        self.play(FadeOut(VGroup(ax_if, o_if, r3, ax_d, c_dif, c_som,
+                                 r_dif, r_som)), run_time=0.9)
         self.play(Write(ident), run_time=2.4)
         self.wait(2.2)
 
         # --- Etapa D: o mesmo fato, no espectro -----------------------------
         leg = self.legenda("No espectro, o mixer ideal é o retrato mais simples "
                            "possível", leg)
-        ax, deco = self.eixo_espectro(P(0, -0.35), 11.4, 3.0)
+        ax, deco = self.eixo_espectro(P(0, -0.6), 11.4, 2.6)
         self.play(Create(ax), FadeIn(deco), run_time=1.1)
-        self.desenhar_raias(ax, [(F_IF, 1, -1), (F_RF + F_LO, 1, 1)], -80,
-                            tamanho=22)
+        raias = self.desenhar_raias(ax, [(F_IF, 1, -1), (F_RF + F_LO, 1, 1)],
+                                    -80, tamanho=22)
         self.wait(1.0)
         nums = VGroup(
             Text("30 MHz", font_size=21, color=COR_IF)
-            .next_to(ax.c2p(F_IF, nivel_db(F_IF)), UR, buff=0.5),
+            .next_to(raias[0][2], RIGHT, buff=0.2),
             Text("230 MHz", font_size=21, color=COR_SOMA)
-            .next_to(ax.c2p(F_RF + F_LO, nivel_db(F_RF + F_LO)), UR, buff=0.5))
+            .next_to(raias[1][2], RIGHT, buff=0.2))
         self.play(FadeIn(nums), run_time=0.8)
         leg = self.legenda("Duas raias e nada mais: nenhum harmônico, "
                            "nenhum vazamento", leg, COR_IF)
@@ -570,21 +642,28 @@ class Mixer(Scene):
         self.play(Write(cab), run_time=2.4)
         self.wait(1.2)
 
+        # faixas: equações em 1,8 / 1,0 / 0,35; rótulos das raias de −1,0 a
+        # −0,3; gráfico de −1,3 a −2,6; números abaixo dele
         piso = -60
-        ax = eixos(P(0, -1.85), 11.0, 1.5, [0, F_MAX, 100], [piso, 10, 20])
-        marcas = marcar_x(ax, [0, 100, 200, 300, 400, 500], piso, 16)
-        rot_sp = Text("espectro de saída [MHz]", font_size=19, color=GREY_A)\
-            .next_to(marcas, DOWN, buff=0.1)
-        self.play(Create(ax), FadeIn(marcas), FadeIn(rot_sp), run_time=1.0)
+        ax, deco = self.eixo_espectro(P(0, -1.95), 11.0, 1.3, piso, 10,
+                                      rot_x=False, rot_y=False, tamanho=16)
+        # curto e encostado à direita: a raia mais alta em frequência (3LO,
+        # 390 MHz) precisa da faixa livre acima dela
+        rot_sp = Text("espectro [MHz]", font_size=16, color=GREY_A)
+        rot_sp.move_to([ax.c2p(F_MAX, 0)[0] - rot_sp.width / 2,
+                        ax.c2p(0, 10)[1] + 0.6, 0])
+        self.reservar(ax, rot_sp.get_left()[0] - 0.1,
+                      rot_sp.get_right()[0] + 0.1, 3)
+        self.play(Create(ax), FadeIn(deco), FadeIn(rot_sp), run_time=1.0)
 
         # --- termo linear ----------------------------------------------------
         leg = self.legenda("Termo linear: o que entra, sai. Nenhuma "
                            "frequência nova.", leg)
         t1 = tex_partes([(r"a\,v_{in} = ", COR_VAZA),
                          (r"a\cos\omega_{RF}t", COR_RF), (r"\;+\;", WHITE),
-                         (r"a\cos\omega_{LO}t", COR_LO)], 34).move_to(P(0, 1.5))
+                         (r"a\cos\omega_{LO}t", COR_LO)], 34).move_to(P(0, 1.95))
         n1 = Text("as portadoras vazam direto para a saída", font_size=24,
-                  color=COR_VAZA).move_to(P(0, 0.6))
+                  color=COR_VAZA).move_to(P(0, 1.0))
         self.play(Write(t1), run_time=1.8)
         self.wait(1.2)
         self.play(FadeIn(n1, shift=UP * 0.15), run_time=0.8)
@@ -596,7 +675,7 @@ class Mixer(Scene):
                            "a multiplicação", leg, COR_IF)
         t2 = tex_partes([(r"b\,v_{in}^2 = b\,v_{RF}^2", WHITE),
                          (r"\;+\;2b\,v_{RF}v_{LO}", COR_IF),
-                         (r"\;+\;b\,v_{LO}^2", WHITE)], 34).move_to(P(0, 1.5))
+                         (r"\;+\;b\,v_{LO}^2", WHITE)], 34).move_to(P(0, 1.95))
         self.play(FadeOut(n1), ReplacementTransform(t1, t2), run_time=1.4)
         self.wait(1.2)
         cx = SurroundingRectangle(t2[1], color=COR_IF, buff=0.1,
@@ -609,7 +688,7 @@ class Mixer(Scene):
             (r"2b\cos\omega_{RF}t\,\cos\omega_{LO}t = ", WHITE),
             (r"b\cos(\omega_{LO}\!-\!\omega_{RF})t", COR_IF),
             (r"\;+\;b\cos(\omega_{LO}\!+\!\omega_{RF})t", COR_SOMA)], 28), 11.5)\
-            .move_to(P(0, 0.55))
+            .move_to(P(0, 1.0))
         self.play(Write(t2b), run_time=2.2)
         self.wait(1.0)
         self.desenhar_raias(ax, [(F_IF, 1, -1), (F_RF + F_LO, 1, 1)], piso,
@@ -617,7 +696,7 @@ class Mixer(Scene):
         self.wait(1.4)
         n2 = Text("e os quadrados dos termos isolados viram DC "
                   "e 2º harmônico", font_size=22, color=GREY_A)\
-            .move_to(P(0, -0.35))
+            .move_to(P(0, 0.35))
         self.play(FadeIn(n2), run_time=0.8)
         self.desenhar_raias(ax, [(2 * F_RF, 2, 0), (2 * F_LO, 0, -2)], piso)
         self.wait(1.6)
@@ -630,7 +709,7 @@ class Mixer(Scene):
                                  (r"\;+\;3v_{RF}^2v_{LO}", COR_IMD),
                                  (r"\;+\;3v_{RF}v_{LO}^2", COR_IMD),
                                  (r"\;+\;v_{LO}^3", WHITE)], 32), 11.0)\
-            .move_to(P(0, 1.5))
+            .move_to(P(0, 1.95))
         self.play(ReplacementTransform(t2, t3), run_time=1.4)
         self.wait(1.4)
         n3 = VGroup(
@@ -640,7 +719,7 @@ class Mixer(Scene):
                  color=COR_VAZA),
             Text("e parte cai de volta sobre f_RF e f_LO  →  "
                  "compressão de ganho (P1dB)", font_size=23, color=COR_LO),
-        ).arrange(DOWN, buff=0.26).move_to(P(0, 0.3))
+        ).arrange(DOWN, buff=0.26).move_to(P(0, 0.72))
         for item in n3:
             self.play(FadeIn(item, shift=RIGHT * 0.2), run_time=0.8)
             self.wait(0.9)
@@ -672,11 +751,12 @@ class Mixer(Scene):
                          (COR_SOMA, "banda soma"),
                          (COR_VAZA, "vazamento / harmônico puro"),
                          (COR_IMD, "intermodulação")]
-        ]).arrange(RIGHT, buff=0.5).move_to(P(0, 1.95))
+        ]).arrange(RIGHT, buff=0.5).move_to(P(0, 2.0))
         ajustar(cores, 12.4)
         self.play(FadeIn(cores), run_time=0.9)
 
-        ax, deco = self.eixo_espectro(P(0, -0.75), 11.4, 2.6)
+        # gráfico de −2,25 a −0,05; faixa de rótulos (5 níveis) até ~1,5
+        ax, deco = self.eixo_espectro(P(0, -1.15), 11.4, 2.2)
         self.play(Create(ax), FadeIn(deco), run_time=1.0)
 
         descricao = {
@@ -696,7 +776,8 @@ class Mixer(Scene):
                                COR_IF if ordem == 2 else GREY_A)
             tudo.add(self.desenhar_raias(ax, itens, -80,
                                          tamanho=16 if ordem < 3 else 14,
-                                         opacidade=1.0 if ordem < 3 else 0.8))
+                                         opacidade=1.0 if ordem < 3 else 0.8,
+                                         max_niveis=5, passo=0.28))
             self.wait(1.4)
 
         leg = self.legenda("Quanto maior a ordem, mais fraca a raia — mas "
@@ -711,9 +792,10 @@ class Mixer(Scene):
                   *[g.animate.set_opacity(0.25) for g in tudo[2:]],
                   run_time=1.4)
         self.wait(1.4)
+        # a linha das cores dá lugar ao SFDR: embaixo não há espaço livre
         sfdr = Text("SFDR ≈ 5 dBc — o maior espúrio está quase no nível da IF",
-                    font_size=24, color=COR_VAZA).move_to(P(0, Y_BASE - 0.15))
-        self.play(FadeIn(sfdr), run_time=0.9)
+                    font_size=24, color=COR_VAZA).move_to(P(0, 2.0))
+        self.play(FadeOut(cores), FadeIn(sfdr), run_time=0.9)
         leg = self.legenda("Tudo o que não é essa raia precisa ser filtrado "
                            "depois", leg, COR_VAZA)
         self.wait(2.0)
@@ -724,9 +806,14 @@ class Mixer(Scene):
         self.titulo_cena("5 · A frequência imagem não é defeito do componente")
 
         ax = eixos(P(0, 1.35), 9.6, 1.5, [0, 220, 50], [0, 1.2, 1])
-        marcas = marcar_x(ax, [0, 50, 100, 150, 200], 0)      # guardado!
-        rot_x = Text("frequência de entrada [MHz]", font_size=20, color=GREY_A)\
-            .next_to(marcas, DOWN, buff=0.12)
+        # só 0, 50 e 200: 100 e 150 ficariam no caminho das setas curvas, e as
+        # raias já trazem as próprias frequências no rótulo
+        marcas = marcar_x(ax, [0, 50, 200], 0)
+        rot_x = VGroup(
+            Text("entrada", font_size=20, color=GREY_A)
+            .next_to(ax, UP, buff=0.05).align_to(ax, LEFT),
+            Text("MHz", font_size=18, color=GREY_A)
+            .next_to(ax.x_axis.get_end(), RIGHT, buff=0.15))
         leg = self.legenda("Voltemos ao mixer ideal e olhemos a ENTRADA")
         self.play(Create(ax), FadeIn(marcas), FadeIn(rot_x), run_time=1.0)
 
@@ -764,8 +851,9 @@ class Mixer(Scene):
         rot2 = Text("saída (IF)", font_size=19, color=GREY_A)\
             .next_to(ax2, DOWN, buff=0.15)
         h_if = haste(ax2, 30, 1.3, COR_IF, 0, largura=6)
+        # à esquerda: as duas setas chegam pela direita
         e_if = Text("30 MHz", font_size=20, color=COR_IF)\
-            .next_to(ax2.c2p(30, 1.3), RIGHT, buff=0.3)
+            .next_to(ax2.c2p(30, 1.3), LEFT, buff=0.3)
         c1 = CurvedArrow(ax.c2p(F_RF, 0.08), ax2.c2p(30, 1.4), color=COR_RF,
                          angle=0.8, stroke_width=3, tip_length=0.18)
         c2 = CurvedArrow(ax.c2p(F_IMG, 0.08), ax2.c2p(30, 1.4), color=COR_IMG,
@@ -776,8 +864,8 @@ class Mixer(Scene):
         self.play(Create(c1), run_time=1.0)
         self.play(Create(c2), run_time=1.0)
         self.play(GrowFromEdge(h_if, DOWN), FadeIn(e_if), run_time=0.9)
-        eq = tex(r"|f_{LO}-f_{RF}| = |f_{LO}-f_{IM}| = 30\ \text{MHz}",
-                 WHITE, 28).move_to(P(3.4, -1.5))
+        eq = ajustar(tex(r"|f_{LO}-f_{RF}| = |f_{LO}-f_{IM}| = 30\ \text{MHz}",
+                         WHITE, 28), 6.0).move_to(P(3.4, -2.2))
         self.play(Write(eq), run_time=1.6)
         self.wait(1.6)
         leg = self.legenda("Nenhum filtro depois do mixer separa as duas: "
@@ -841,12 +929,12 @@ class Mixer(Scene):
         self.wait(1.2)
 
         sol = VGroup(
-            tex(r"e^{-j\omega_{LO}t}", COR_FPGA, 32),
+            tex(r"e^{-j\omega_{LO}t}", COR_FPGA, 36),
             Text("usar um sentido só: dois multiplicadores, I e Q",
                  font_size=21, color=GREY_A),
             Text("a imagem é rejeitada por construção", font_size=22,
                  color=COR_OK),
-        ).arrange(DOWN, buff=0.22).move_to(P(3.2, Y_BASE - 0.1))
+        ).arrange(DOWN, buff=0.22).move_to(P(3.2, -1.9))
         leg = self.legenda("A saída é um LO que gira num sentido só — "
                            "é exatamente o que o DDC faz", leg, COR_FPGA)
         self.play(FadeIn(sol, shift=UP * 0.2), run_time=1.4)
@@ -965,9 +1053,9 @@ class Mixer(Scene):
         R = 1.4
         circ = Circle(radius=R, color=COR_EIXO, stroke_width=2).move_to(centro)
         eixos_c = VGroup(
-            Line(centro + LEFT * (R + 0.4), centro + RIGHT * (R + 0.4),
+            Line(centro + LEFT * (R + 0.2), centro + RIGHT * (R + 0.2),
                  color=COR_EIXO, stroke_width=2),
-            Line(centro + DOWN * (R + 0.4), centro + UP * (R + 0.4),
+            Line(centro + DOWN * (R + 0.2), centro + UP * (R + 0.2),
                  color=COR_EIXO, stroke_width=2))
         pontos, rotp = VGroup(), VGroup()
         for dx, dy, txt in [(1, 0, "cos = 1\nsen = 0"), (0, 1, "cos = 0\nsen = 1"),
@@ -976,7 +1064,10 @@ class Mixer(Scene):
             pontos.add(Dot(centro + R * np.array([dx, dy, 0.0]),
                            color=COR_FPGA, radius=0.11))
             rotp.add(Text(txt, font_size=17, color=COR_LO, line_spacing=0.8)
-                     .move_to(centro + (R + 0.75) * np.array([dx, dy, 0.0])))
+                     # os rótulos de 2 linhas são mais largos que altos:
+                     # nas laterais precisam de mais distância
+                     .move_to(centro + (R + (0.85 if dx else 0.62))
+                              * np.array([dx, dy, 0.0])))
         self.play(Create(circ), Create(eixos_c), run_time=0.9)
         for p, r in zip(pontos, rotp):
             self.play(GrowFromCenter(p), FadeIn(r), run_time=0.55)
