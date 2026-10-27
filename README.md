@@ -20,7 +20,7 @@ O repositório tem duas partes que andam juntas:
 | Detecção de amplitude e fase: Non-IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
 | Detecção de amplitude e fase: Digital Down Conversion | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
 | DDC: Decimador | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Decimador.md) | [decimador.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/decimador.py) | `Decimador` | ~2 min |
-| DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~2 min |
+| DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~7 min |
 | DDC: Filtro FIR | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20FIR.md) | [filtro_fir.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_fir.py) | `FiltroFIR` | ~2 min |
 | Signal Conditioning: Mixer | [.md](docs/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer.md) | [mixer.py](src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/mixer.py) | `Mixer` | ~8 min |
 | DSP 1/7: Fundamentos de Sinais e Sistemas Discretos | [.md](docs/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos.md) | [fundamentos_sinais_discretos.py](src/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/fundamentos_sinais_discretos.py) | `FundamentosSinaisDiscretos` | ~11 min |
@@ -194,14 +194,31 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 
 Exemplo usado: atraso do comb D = 4.
 
-1. **Estrutura.** Integrador `I[n] = I[n−1] + x[n]` e comb `y[n] = I[n] − I[n−4]`.
-2. **Integrador.** Tabela e barras mostrando a soma de todo o histórico (`I[4] = x[4] + … + x[0]`)
-   e o overflow proposital.
-3. **Comb.** O x[0] se anula e sobra uma janela de 4 amostras, que desliza pela tabela.
-4. **Filtragem.** Janela sobre `+1 −1 +1 −1` (soma 0) e `+1 +1 +1 +1` (soma 4).
-5. **Média móvel.** Sinal ruidoso suavizado e |H(f)| com ganho 4 em DC e zeros em f_s/4 e f_s/2.
-6. **Com o decimador.** ↓4 entre integrador e comb: o comb, com atraso de 1 na taxa
-   lenta, subtrai 4 amostras rápidas.
+1. **Lendo o diagrama.** Os quatro símbolos — seta, somador (com os sinais + e −),
+   registrador `z⁻¹` e nó — e uma amostra atravessando o registrador em dois ciclos.
+2. **Estrutura.** Integrador `I[n] = I[n−1] + x[n]` e comb `y[n] = I[n] − I[n−4]`,
+   com o contraste entre o laço realimentado e o caminho só para frente.
+3. **Integrador ciclo a ciclo.** Os números entrando no somador, voltando pelo laço e
+   entrando no registrador, com tabela `n | x[n] | z⁻¹ | I[n]`; depois o acumulador
+   crescendo até o limite de bits e o overflow proposital.
+4. **Comb ciclo a ciclo.** O `z⁻⁴` aberto em quatro registradores: os valores andando
+   pela fila, o primeiro caindo pela ponta no 4º ciclo, e o x[0] se anulando na álgebra.
+5. **Janela deslizante.** A tabela com as três linhas, a janela de 4 amostras correndo e
+   a resposta ao impulso `1 1 1 1` — um FIR de coeficientes iguais, sem multiplicadores.
+6. **Por que filtra.** Janela sobre `+1 −1 +1 −1` (soma 0) e `+1 +1 +1 +1` (soma 4),
+   depois o mesmo efeito em um sinal ruidoso real.
+7. **Medindo |H(f)|.** Uma senoide de teste por vez: ganho 4 em DC, 2,61 em f_s/8, zero em
+   f_s/4 (um período inteiro na janela) e em f_s/2 (dois períodos), com a curva sendo
+   traçada ponto a ponto enquanto a frequência varre de 0 a f_s/2.
+8. **Lendo o gráfico.** O que é cada eixo, o ganho D em DC, os zeros em múltiplos de f_s/D,
+   lóbulo principal e lóbulos laterais (≈ −11 dB) e a fórmula `|sin(πDf/f_s)/sin(πf/f_s)|`.
+9. **Trocando o fator.** D = 2, 4, 8 e 16 na frequência (primeiro zero em f_s/D) e no tempo
+   (o mesmo sinal ruidoso filtrado e decimado por cada fator, até o droop visível em D = 16).
+10. **Anti-aliasing sob medida.** As bandas em torno de f_s/4, f_s/2 e 3f_s/4 dobram sobre a
+    banda base ao decimar por 4 — e os zeros do CIC caem exatamente no centro delas.
+11. **Com o decimador.** ↓4 entre integrador e comb: o comb, com atraso de 1 na taxa
+    lenta, subtrai 4 amostras rápidas (Hogenauer).
+12. **N estágios.** `|H(f)|ᴺ` em dB: lóbulos em −11, −23 e −34 dB e o droop que o FIR corrige.
 
 ### Filtro FIR
 
