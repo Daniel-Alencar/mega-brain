@@ -23,6 +23,7 @@ O repositório tem duas partes que andam juntas:
 | DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~7 min |
 | DDC: Filtro FIR | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20FIR.md) | [filtro_fir.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_fir.py) | `FiltroFIR` | ~2 min |
 | Signal Conditioning: Mixer | [.md](docs/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer.md) | [mixer.py](src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/mixer.py) | `Mixer` | ~8 min |
+| Up-conversion | [.md](docs/Up-conversion/Up-conversion.md) | [up_conversion.py](src/Up-conversion/up_conversion.py) | `UpConversion` | ~5 min |
 | DSP 1/7: Fundamentos de Sinais e Sistemas Discretos | [.md](docs/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos.md) | [fundamentos_sinais_discretos.py](src/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/fundamentos_sinais_discretos.py) | `FundamentosSinaisDiscretos` | ~11 min |
 
 Uma ordem natural de estudo é a da tabela: primeiro a malha LLRF como um todo,
@@ -256,6 +257,27 @@ Frequências do exemplo: f_RF = 100 MHz, f_LO = 130 MHz, f_IF = 30 MHz.
 7. **Atraso de grupo.** Elíptico analógico (pico perto da banda) × FIR de fase
    linear (constante), e o custo em margem de fase numa malha de realimentação.
 
+### Up-conversion
+
+Exemplo usado: f_IF = 20 MHz, f_LO = 480 MHz, f_RF = 500 MHz, imagem em 460 MHz.
+
+1. **O problema.** De um lado I e Q em banda base, do outro a cavidade em 500 MHz;
+   um DAC direto (DDS) ainda não tem precisão e velocidade para fazer a ponte.
+2. **I e Q são o fasor.** `I·sin + Q·cos` é uma única senoide, com
+   `A = √(I²+Q²)` e `φ₀ = atan(Q/I)`.
+3. **Modulador vetorial (homodino).** Híbrido de 90°, dois mixers e um somador
+   (Fig. 21); no espectro, a banda base sobe inteira para f_LO = f_RF.
+4. **AM e PM.** Os mesmos dois botões: `A₀(t)` estica o fasor, `φ₀(t)` o gira.
+5. **Os erros do analógico.** Offset (vazamento de portadora), desbalanço de
+   ganho (elipse), skew de quadratura (eixos tortos) e ruído de fase do LO.
+6. **Pré-distorção.** A matriz de correção do skew, feita no FPGA antes dos DACs.
+7. **Heteródino (Fig. 22).** NCO e quadratura digitais, um DAC na IF e um mixer
+   analógico: nasce a imagem em f_LO − f_IF e com ela o método da filtragem.
+8. **Banda lateral única (Figs. 23 e 24).** Dois DACs e um modulador vetorial;
+   as bandas inferiores se cancelam por estarem 180° fora de fase.
+9. **Comparação.** Homodino × banda dupla × banda lateral única, e a supressão
+   de banda lateral em dBc.
+
 ### DSP 1/7 — Fundamentos de Sinais e Sistemas Discretos
 
 1. **Do contínuo ao discreto.** A onda analógica, as marcas de amostragem e a
@@ -318,6 +340,7 @@ manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/dec
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_cic.py" FiltroCIC
 manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_fir.py" FiltroFIR
 manim -pql "src/Signal Conditioning and Down Conversion/Mixer/mixer.py" Mixer
+manim -pql "src/Up-conversion/up_conversion.py" UpConversion
 manim -pql "src/DSP/1 - Fundamentos de Sinais e Sistemas Discretos/fundamentos_sinais_discretos.py" FundamentosSinaisDiscretos
 ```
 
