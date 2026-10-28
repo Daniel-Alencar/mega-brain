@@ -7,41 +7,73 @@ O repositório tem duas partes que andam juntas:
 
 - **`docs/`**: um texto em Markdown para cada assunto, independente e completo.
 - **`src/`**: uma animação em [Manim Community](https://www.manim.community/) para
-  cada texto, na pasta de mesmo nome.
+  cada texto.
+
+As duas árvores são espelhadas: o mesmo caminho de pastas, com o mesmo prefixo
+numérico, leva ao texto em `docs/` e à animação em `src/`. O número é a ordem de
+estudo recomendada.
 
 ## Assuntos
 
-| Assunto | Texto | Animação | Cena | Duração |
-|---|---|---|---|---|
-| Componentes de um sistema de RF | [.md](docs/Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md) | [componentes_sistema_rf.py](src/Componentes%20de%20um%20sistema%20de%20RF/componentes_sistema_rf.py) | `ComponentesSistemaRF` | ~4 min |
-| Modelagem de uma cavidade de RF | [.md](docs/Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md) | [modelagem_cavidade.py](src/Modelagem%20de%20uma%20cavidade%20de%20RF/modelagem_cavidade.py) | `ModelagemCavidade` | ~3 min |
-| Filtros | [.md](docs/Filtros/Filtros.md) | [filtros.py](src/Filtros/filtros.py) | `Filtros` | ~3 min |
-| Detecção de amplitude e fase: IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.py) | `IQSampling` | ~9 min |
-| Detecção de amplitude e fase: Non-IQ sampling | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
-| Detecção de amplitude e fase: Digital Down Conversion | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
-| DDC: Decimador | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Decimador.md) | [decimador.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/decimador.py) | `Decimador` | ~2 min |
-| DDC: Filtro CIC | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20CIC.md) | [filtro_cic.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_cic.py) | `FiltroCIC` | ~7 min |
-| DDC: Filtro FIR | [.md](docs/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/Filtro%20FIR.md) | [filtro_fir.py](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/Digital%20Down%20Conversion/filtro_fir.py) | `FiltroFIR` | ~2 min |
-| Signal Conditioning: Mixer | [.md](docs/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/Mixer.md) | [mixer.py](src/Signal%20Conditioning%20and%20Down%20Conversion/Mixer/mixer.py) | `Mixer` | ~8 min |
-| Up-conversion | [.md](docs/Up-conversion/Up-conversion.md) | [up_conversion.py](src/Up-conversion/up_conversion.py) | `UpConversion` | ~5 min |
-| DSP 1/7: Fundamentos de Sinais e Sistemas Discretos | [.md](docs/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos.md) | [fundamentos_sinais_discretos.py](src/DSP/1%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/fundamentos_sinais_discretos.py) | `FundamentosSinaisDiscretos` | ~11 min |
+A numeração das pastas **é** a ordem de estudo, e ela é idêntica em `docs/` e em
+`src/`: o texto e a animação de um assunto ficam no mesmo caminho, mudando só a
+raiz. Por exemplo, o assunto 7.3.2 é
+`docs/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/2 - Filtro CIC/Filtro CIC.md` e
+`src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/2 - Filtro CIC/filtro_cic.py`.
 
-Uma ordem natural de estudo é a da tabela: primeiro a malha LLRF como um todo,
-depois a cavidade e os filtros, e por fim as três técnicas de detecção de
-amplitude e fase. Os três últimos aprofundam blocos do DDC: o decimador e os
-filtros CIC e FIR. O Mixer fecha a volta pelo lado analógico: mostra o que o
-hardware de RF faz antes de o sinal chegar ao ADC, e por que a mistura digital
-dentro da FPGA é tão mais limpa.
+| # | Assunto | Texto | Animação | Cena | Duração |
+|---|---|---|---|---|---|
+| 1 | Componentes de um sistema de RF | [.md](docs/1%20-%20Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md) | [componentes_sistema_rf.py](src/1%20-%20Componentes%20de%20um%20sistema%20de%20RF/componentes_sistema_rf.py) | `ComponentesSistemaRF` | ~4 min |
+| 2 | Fundamentos de Sinais e Sistemas Discretos | [.md](docs/2%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos.md) | [fundamentos_sinais_discretos.py](src/2%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/fundamentos_sinais_discretos.py) | `FundamentosSinaisDiscretos` | ~11 min |
+| 3 | Amostragem e Aliasing | [.md](docs/3%20-%20Amostragem%20e%20Aliasing/Amostragem%20e%20Aliasing.md) | [amostragem_aliasing.py](src/3%20-%20Amostragem%20e%20Aliasing/amostragem_aliasing.py) | `AmostragemAliasing` | ~5 min |
+| 4 | Filtros | [.md](docs/4%20-%20Filtros/Filtros.md) | [filtros.py](src/4%20-%20Filtros/filtros.py) | `Filtros` | ~3 min |
+| 5 | Modelagem de uma cavidade de RF | [.md](docs/5%20-%20Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md) | [modelagem_cavidade.py](src/5%20-%20Modelagem%20de%20uma%20cavidade%20de%20RF/modelagem_cavidade.py) | `ModelagemCavidade` | ~3 min |
+| 6 | Mixer | [.md](docs/6%20-%20Mixer/Mixer.md) | [mixer.py](src/6%20-%20Mixer/mixer.py) | `Mixer` | ~8 min |
+| 7.1 | Detecção: IQ sampling | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/1%20-%20IQ%20sampling/IQ%20sampling.md) | [iq_sampling.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/1%20-%20IQ%20sampling/iq_sampling.py) | `IQSampling` | ~9 min |
+| 7.2 | Detecção: Non-IQ sampling | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/2%20-%20Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/2%20-%20Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
+| 7.3 | Detecção: Digital Down Conversion | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
+| 7.3.1 | DDC: Decimador | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/1%20-%20Decimador/Decimador.md) | [decimador.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/1%20-%20Decimador/decimador.py) | `Decimador` | ~2 min |
+| 7.3.2 | DDC: Filtro CIC | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/Filtro%20CIC.md) | [filtro_cic.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/filtro_cic.py) | `FiltroCIC` | ~7 min |
+| 7.3.3 | DDC: Filtro FIR | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/Filtro%20FIR.md) | [filtro_fir.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/filtro_fir.py) | `FiltroFIR` | ~2 min |
+| 8 | Up-conversion | [.md](docs/8%20-%20Up-conversion/Up-conversion.md) | [up_conversion.py](src/8%20-%20Up-conversion/up_conversion.py) | `UpConversion` | ~5 min |
 
-A série **DSP** é independente dessa ordem: é uma formação de base em
-processamento digital de sinais, em 7 assuntos, cujo roteiro está em
-[docs/DSP/Tópicos](docs/DSP/Tópicos/Tópicos.md). Cada assunto vira um vídeo.
-Os assuntos 6 (multitaxa) e 7 (aplicações) encostam no material de LLRF que já
-existe no repositório e apontam para ele em vez de repeti-lo.
+A ordem segue a cadeia de dependências — **o sistema → a matemática → o sinal
+digitalizado → os blocos analógicos → a detecção → a geração**:
+
+- **1** dá o mapa da malha LLRF inteira, para que cada bloco dos assuntos
+  seguintes tenha onde se encaixar: é a resposta à pergunta "por que existe um
+  mixer, um ADC, um DDC, um DAC".
+- **2** e **3** são a base de DSP: o que é uma sequência, o que é um sistema LTI
+  e o que a amostragem faz com o espectro.
+- **4** traz polos, ζ, Q e roll-off, que **5** usa em seguida para modelar a
+  cavidade — um RLC ressonante — e que reaparecem em todo filtro posterior.
+- **6** é o último bloco analógico antes do ADC, e o lugar onde se vê a
+  frequência imagem pela primeira vez.
+- **7** são as três técnicas de detecção de amplitude e fase, com o DDC aberto
+  nos seus próprios blocos: o decimador primeiro (o que é decimar), o CIC depois
+  (o filtro que existe para permitir a decimação) e o FIR no fim (o filtro que
+  corrige o *droop* do CIC).
+- **8** fecha a volta: do I/Q digital de novo até a portadora, reaproveitando o
+  fasor, o NCO e a frequência imagem já vistos.
+
+### Relação com o currículo de DSP
+
+[`docs/0 - Tópicos`](docs/0%20-%20Tópicos/Tópicos.md) descreve uma formação de
+base em DSP em 7 tópicos. A trilha acima cobre parte dela, e é útil saber qual:
+
+| Tópico de DSP | Onde está |
+|---|---|
+| 1 · Sinais e sistemas discretos | assunto **2** |
+| 2 · Amostragem e reconstrução | assunto **3** |
+| 3 · Transformadas (DTFT, Z, DFT, FFT) | **não coberto**; usado implicitamente em toda cena de espectro |
+| 4 · Projeto de filtros digitais | parcial: **7.3.3** (FIR, fase linear, custo) e **4** (protótipos analógicos) |
+| 5 · Efeitos de precisão finita | parcial: crescimento de bits e overflow no CIC (**7.3.2**) e espúrios do DDS (**6**) |
+| 6 · Processamento multitaxa | **7.3.1** (decimação, polifásico) e **7.3.2** (CIC, Hogenauer) |
+| 7 · Aplicações em RF | **7.1**, **7.2**, **7.3** e **8** |
 
 ## O que cada animação mostra
 
-### Componentes de um sistema de RF
+### 1 · Componentes de um sistema de RF
 
 1. **A malha completa.** FPGA → DAC → mixer → filtro → amplificador → linhas →
    cavidade → atenuadores → mixer → filtro → ADC → FPGA, com os 7 componentes numerados.
@@ -56,7 +88,69 @@ existe no repositório e apontam para ele em vez de repeti-lo.
 10. **Banda × ripple.** Função de sensibilidade |S| para BW de 1 kHz e 50 kHz com
     ripple de 10 kHz (modelo simples `C(s)H(s) ≈ ω_BW/s`).
 
-### Modelagem de uma cavidade de RF
+### 2 · Fundamentos de Sinais e Sistemas Discretos
+
+1. **Do contínuo ao discreto.** A onda analógica, as marcas de amostragem e a
+   sequência resultante; `n` é índice inteiro, e entre amostras não existe nada.
+2. **δ[n] e u[n].** Os dois sinais elementares e a relação nos dois sentidos:
+   `δ[n] = u[n] − u[n−1]` e `u[n] = Σ δ[k]`.
+3. **Exponenciais e senoides discretas.** `aⁿ` decaindo e crescendo, o fasor
+   `e^{jωn}` passo a passo, e as duas armadilhas: ω e ω+2π dão a mesma
+   sequência, e uma senoide discreta só é periódica se ω/2π for racional.
+4. **Decomposição em impulsos.** `x[n] = Σ x[k]·δ[n−k]`, desmontada amostra a
+   amostra — é a ideia que justifica toda a teoria LTI.
+5. **Linearidade e invariância.** Definições e contraexemplos numéricos
+   (`y = x²` e `y[n] = n·x[n]`).
+6. **Causalidade e BIBO.** Passado e futuro no eixo, `h[n] = 0` para `n < 0`,
+   e `Σ|h[n]| < ∞` comparando `0,8ⁿ` com `1,25ⁿ`.
+7. **Convolução.** Inverter, deslizar e somar, conta a conta, com
+   `x = 1,2,3` e `h = 1,1,1`; saída de comprimento N+M−1.
+8. **LCCDE.** A receita prática, com os `b` e os `a` separados, e FIR × IIR
+   lado a lado.
+
+### 3 · Amostragem e Aliasing
+
+Exemplo usado nas cenas 1 a 7: f_s = 10 kHz (T = 0,1 ms), sinal útil de 0 a 4 kHz.
+
+1. **A mesma sequência serve a infinitas ondas.** Senoides de 1, 9 e 11 kHz
+   passando pelos mesmos onze pontos, e a álgebra que explica:
+   `cos(2π·9n/10) = cos(2πn − 2π·n/10) = cos(2π·n/10)`. O ADC não erra cada
+   medida — ele perde a identidade da frequência.
+2. **Amostrar é multiplicar por um pente de impulsos.** No tempo, `x(t)·Σδ(t−nT)`;
+   na frequência, a convolução com o pente replica o espectro a cada f_s:
+   `X_s(f) = f_s·Σ X(f − k·f_s)`. As réplicas são as infinitas ondas da cena 1.
+3. **O critério de Nyquist.** Baixando f_s com o espectro na tela: as réplicas se
+   aproximam, encostam exatamente em f_max quando f_s = 2·f_max, e se sobrepõem
+   abaixo disso. Fecha com `f_s > 2·f_max` e a promessa de reconstrução exata.
+4. **A regra da dobra.** O mapa `f_ap = |f − f_s·round(f/f_s)|` desenhado como
+   onda triangular, com as zonas de Nyquist sombreadas e um ponto percorrendo
+   1 → 4 → 6 → 9 → 11 → 21 kHz. As zonas pares chegam com o espectro invertido.
+5. **O filtro anti-aliasing.** Interferência em 7 kHz dobrando para 3 kHz, dentro
+   da banda útil; o passa-baixa analógico atenuando-a enquanto ainda era 7 kHz; e
+   a banda de transição, que obriga a escolher entre folga de guarda e
+   sobreamostragem.
+6. **Quantização.** Degraus e erro com B = 2, 3, 4 e 6 bits, `Δ = V_FS/2^B`,
+   `σ² = Δ²/12`, `SQNR ≈ 6,02·B + 1,76 dB` e a tabela de 8 a 16 bits.
+7. **Reconstrução.** Uma sinc por amostra somando-se de volta ao sinal; depois o
+   Zero-Order Hold real do DAC, o seu droop de −3,9 dB em f_s/2 e as imagens em
+   torno de f_s, com os dois remédios.
+8. **Sub-amostragem deliberada.** Nyquist sobre f_max (1000 MSps) × sobre a
+   largura de banda (4 MSps); a portadora de 500 MHz caindo em 20 MHz com
+   f_s = 80 MSps — que é f_s/4, a mesma escolha do assunto 7.1; e o preço:
+   anti-aliasing passa-banda, inversão nas zonas pares e jitter.
+9. **Resumo.**
+
+### 4 · Filtros
+
+1. **Ordem.** Grau de D(s) = nº de polos = nº de elementos reativos (RC × RLC).
+2. **Roll-off.** Bode de 1ª ordem (−20 dB/década) × 2ª ordem (−40 dB/década).
+3. **Comportamento dinâmico.** Polos no plano s e resposta ao degrau variando ζ (e Q).
+4. **1ª ordem.** RC série: tensão no C (passa-baixa) e no R (passa-alta), com varredura de ω.
+5. **2ª ordem.** Mesmo D(s); o numerador define LP, BP ou HP; efeito de Q; tabela-resumo.
+6. **RLC série, quatro filtros.** V_C, V_L, V_R e V_LC ⇒ LP, HP, BP e notch.
+7. **Série × paralelo.** |Z| mínima × máxima em ω₀ e a divisão de corrente nos ramos.
+
+### 5 · Modelagem de uma cavidade de RF
 
 1. **Por que RLC paralelo.** Campo E axial ↔ C, campo B azimutal ↔ L, perdas nas
    paredes ↔ R, com a energia oscilando entre W_E e W_M.
@@ -68,17 +162,32 @@ existe no repositório e apontam para ele em vez de repeti-lo.
 6. **Forma canônica.** `ω₀ = 1/√(LC)`, `2ω½` e `K = 1/C`.
 7. **Resposta em frequência.** L em curto, C em curto e L∥C aberto em ω₀.
 
-### Filtros
+### 6 · Mixer
 
-1. **Ordem.** Grau de D(s) = nº de polos = nº de elementos reativos (RC × RLC).
-2. **Roll-off.** Bode de 1ª ordem (−20 dB/década) × 2ª ordem (−40 dB/década).
-3. **Comportamento dinâmico.** Polos no plano s e resposta ao degrau variando ζ (e Q).
-4. **1ª ordem.** RC série: tensão no C (passa-baixa) e no R (passa-alta), com varredura de ω.
-5. **2ª ordem.** Mesmo D(s); o numerador define LP, BP ou HP; efeito de Q; tabela-resumo.
-6. **RLC série, quatro filtros.** V_C, V_L, V_R e V_LC ⇒ LP, HP, BP e notch.
-7. **Série × paralelo.** |Z| mínima × máxima em ω₀ e a divisão de corrente nos ramos.
+Frequências do exemplo: f_RF = 100 MHz, f_LO = 130 MHz, f_IF = 30 MHz.
 
-### IQ sampling
+1. **Mixer ideal.** O produto ponto a ponto vira um batimento; o batimento é
+   decomposto nas duas senoides que o formam (`f_LO − f_RF` e `f_LO + f_RF`) e
+   o espectro mostra que não há mais nada além delas.
+2. **Nenhum componente multiplica tensões.** Curva I × V exponencial do diodo,
+   ponto de operação e as aproximações de Taylor de ordem 1, 2 e 3; a soma dos
+   dois tons atravessa a curva e sai deformada.
+3. **Quem gera o quê.** Termo a termo (`a·v_in`, `b·v_in²`, `c·v_in³`), com um
+   espectro embaixo que vai sendo preenchido: vazamento, a IF que nasce do
+   termo quadrático, harmônicos e intermodulação.
+4. **A família m·f_RF ± n·f_LO.** O espectro real construído ordem por ordem,
+   com cada raia rotulada e colorida por categoria; SFDR ≈ 5 dBc.
+5. **Frequência imagem.** Duas entradas simétricas em torno do LO caem na mesma
+   IF; o cosseno real é a soma de dois fasores girando em sentidos opostos, e é
+   o fasor negativo que cria a imagem. Mistura complexa I/Q resolve.
+6. **No FPGA.** Cadeia ADC → mixer → CIC → FIR com o DDS; a rampa de fase
+   truncada e a LUT quantizada mostram de onde vêm os espúrios digitais
+   (`SFDR ≈ −6,02·B`); e o caso `f_LO = f_s/4`, em que a multiplicação vira
+   `{1, 0, −1, 0}`.
+7. **Atraso de grupo.** Elíptico analógico (pico perto da banda) × FIR de fase
+   linear (constante), e o custo em margem de fase numa malha de realimentação.
+
+### 7.1 · IQ sampling
 
 A ordem abaixo é a do vídeo.
 
@@ -121,14 +230,14 @@ Para gerar o vídeo, a partir da raiz do repositório:
 source venv/bin/activate
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0   # veja Problemas comuns
 
-manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # rascunho 480p
-manim -pqh "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling   # final 1080p
+manim -pql "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling   # rascunho 480p
+manim -pqh "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling   # final 1080p
 ```
 
 O arquivo sai em `media/videos/iq_sampling/480p15/IQSampling.mp4` (ou `1080p60/`
 com `-qh`), e o `-p` abre o vídeo assim que ele fica pronto.
 
-Na mesma pasta, [`iq_sampling.ipynb`](src/Detecção%20de%20amplitude%20e%20fase%20em%20RF/IQ%20sampling/iq_sampling.ipynb)
+Na mesma pasta, [`iq_sampling2.ipynb`](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/1%20-%20IQ%20sampling/iq_sampling2.ipynb)
 reproduz numericamente **todas as cenas acima**, na mesma ordem: a identidade
 polar ↔ cartesiana, a amostragem em `f_s = 4·f_IF`, os quatro pares
 `(y_{i+1}, y_i)`, a matriz de rotação, a detecção de erro de fase, a demodulação
@@ -137,12 +246,15 @@ dobra e o aliasing das harmônicas ímpares. Serve para mexer nos parâmetros e 
 o efeito — algo que o vídeo, sendo fixo, não permite.
 
 ```bash
-jupyter lab "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.ipynb"
+jupyter lab "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling2.ipynb"
 ```
 
 Requer apenas `numpy` e `matplotlib` (mais `jupyter` para abrir o caderno).
 
-### Non-IQ sampling
+Na mesma pasta há também `iq_sampling1.ipynb`, material de apoio de terceiros
+(em inglês) sobre o mesmo assunto — não é parte do roteiro do vídeo.
+
+### 7.2 · Non-IQ sampling
 
 Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 
@@ -160,7 +272,7 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 8. **Latência.** Uma estimativa por amostra × uma a cada N amostras.
 9. **Resumo** em tabela.
 
-### Digital Down Conversion
+### 7.3 · Digital Down Conversion
 
 1. **Amplitude e fase → I e Q.** A identidade da soma de arcos transforma
    `A·cos(ωt + φ)` em `I·cos ωt − Q·sin ωt`; as duas ondas somadas e o fasor (I, Q).
@@ -172,15 +284,17 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 5. **Motivação do DDC.** Nyquist sobre a maior frequência (82 MSps) × sobre a
    largura de banda (2 MSps).
 6. **Os três blocos do DDC.** Misturadores digitais, NCO e LPF de decimação.
-7. **NCO.** Acumulador de fase, LUT, `f_out = M/2^N · f_CLK`, resolução e
-   truncação de fase.
-8. **Mistura, filtragem e decimação.** Soma e diferença no espectro e o aliasing
-   quando se decima sem filtrar.
+7. **NCO.** Por que ele merece uma cena (quadratura exata e sintonia livre), o
+   acumulador de fase como roda de N bits, a LUT, os dois canais lidos da mesma
+   roda com 4 marcas de distância (90° exatos) e `f_out = M/2^N · f_CLK`. A
+   truncação de fase fica só no texto: é assunto de DDS, não de DDC.
+8. **Mistura, filtragem e decimação.** A conta da cena 3 relida no espectro
+   (banda base × termo em 2ωc), o LPF e o aliasing quando se decima sem filtrar.
 9. **Filtro CIC.** Integradores, ↓R e pentes; equivalência com média móvel;
    resposta sinc, droop e crescimento de bits.
 10. **DDC × IQ sampling clássico** e resumo.
 
-### Decimador
+### 7.3.1 · Decimador
 
 1. **O que é decimar.** Manter 1 amostra a cada M, com M variando: `f_s' = f_s/M`.
 2. **As duas etapas.** FIR passa-baixa (anti-aliasing) seguido de ↓M.
@@ -191,7 +305,7 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 6. **Polifásico.** A implementação ingênua desperdiça M − 1 saídas; os sub-filtros
    E₀…E₃ com comutador fazem N/M multiplicações por amostra.
 
-### Filtro CIC
+### 7.3.2 · Filtro CIC
 
 Exemplo usado: atraso do comb D = 4.
 
@@ -221,7 +335,7 @@ Exemplo usado: atraso do comb D = 4.
     lenta, subtrai 4 amostras rápidas (Hogenauer).
 12. **N estágios.** `|H(f)|ᴺ` em dB: lóbulos em −11, −23 e −34 dB e o droop que o FIR corrige.
 
-### Filtro FIR
+### 7.3.3 · Filtro FIR
 
 1. **A equação.** `y[n] = Σ h[k]·x[n−k]`, N taps e ordem N − 1.
 2. **Estrutura.** Linha de atrasos, multiplicadores e somadores, com as amostras
@@ -232,32 +346,7 @@ Exemplo usado: atraso do comb D = 4.
 6. **Custo.** Passa-baixa com 11, 31 e 101 taps: transição mais estreita exige mais multiplicadores.
 7. **FIR × IIR.** Equações e tabela comparativa.
 
-### Mixer
-
-Frequências do exemplo: f_RF = 100 MHz, f_LO = 130 MHz, f_IF = 30 MHz.
-
-1. **Mixer ideal.** O produto ponto a ponto vira um batimento; o batimento é
-   decomposto nas duas senoides que o formam (`f_LO − f_RF` e `f_LO + f_RF`) e
-   o espectro mostra que não há mais nada além delas.
-2. **Nenhum componente multiplica tensões.** Curva I × V exponencial do diodo,
-   ponto de operação e as aproximações de Taylor de ordem 1, 2 e 3; a soma dos
-   dois tons atravessa a curva e sai deformada.
-3. **Quem gera o quê.** Termo a termo (`a·v_in`, `b·v_in²`, `c·v_in³`), com um
-   espectro embaixo que vai sendo preenchido: vazamento, a IF que nasce do
-   termo quadrático, harmônicos e intermodulação.
-4. **A família m·f_RF ± n·f_LO.** O espectro real construído ordem por ordem,
-   com cada raia rotulada e colorida por categoria; SFDR ≈ 5 dBc.
-5. **Frequência imagem.** Duas entradas simétricas em torno do LO caem na mesma
-   IF; o cosseno real é a soma de dois fasores girando em sentidos opostos, e é
-   o fasor negativo que cria a imagem. Mistura complexa I/Q resolve.
-6. **No FPGA.** Cadeia ADC → mixer → CIC → FIR com o DDS; a rampa de fase
-   truncada e a LUT quantizada mostram de onde vêm os espúrios digitais
-   (`SFDR ≈ −6,02·B`); e o caso `f_LO = f_s/4`, em que a multiplicação vira
-   `{1, 0, −1, 0}`.
-7. **Atraso de grupo.** Elíptico analógico (pico perto da banda) × FIR de fase
-   linear (constante), e o custo em margem de fase numa malha de realimentação.
-
-### Up-conversion
+### 8 · Up-conversion
 
 Exemplo usado: f_IF = 20 MHz, f_LO = 480 MHz, f_RF = 500 MHz, imagem em 460 MHz.
 
@@ -278,29 +367,9 @@ Exemplo usado: f_IF = 20 MHz, f_LO = 480 MHz, f_RF = 500 MHz, imagem em 460 MHz.
 9. **Comparação.** Homodino × banda dupla × banda lateral única, e a supressão
    de banda lateral em dBc.
 
-### DSP 1/7 — Fundamentos de Sinais e Sistemas Discretos
-
-1. **Do contínuo ao discreto.** A onda analógica, as marcas de amostragem e a
-   sequência resultante; `n` é índice inteiro, e entre amostras não existe nada.
-2. **δ[n] e u[n].** Os dois sinais elementares e a relação nos dois sentidos:
-   `δ[n] = u[n] − u[n−1]` e `u[n] = Σ δ[k]`.
-3. **Exponenciais e senoides discretas.** `aⁿ` decaindo e crescendo, o fasor
-   `e^{jωn}` passo a passo, e as duas armadilhas: ω e ω+2π dão a mesma
-   sequência, e uma senoide discreta só é periódica se ω/2π for racional.
-4. **Decomposição em impulsos.** `x[n] = Σ x[k]·δ[n−k]`, desmontada amostra a
-   amostra — é a ideia que justifica toda a teoria LTI.
-5. **Linearidade e invariância.** Definições e contraexemplos numéricos
-   (`y = x²` e `y[n] = n·x[n]`).
-6. **Causalidade e BIBO.** Passado e futuro no eixo, `h[n] = 0` para `n < 0`,
-   e `Σ|h[n]| < ∞` comparando `0,8ⁿ` com `1,25ⁿ`.
-7. **Convolução.** Inverter, deslizar e somar, conta a conta, com
-   `x = 1,2,3` e `h = 1,1,1`; saída de comprimento N+M−1.
-8. **LCCDE.** A receita prática, com os `b` e os `a` separados, e FIR × IIR
-   lado a lado.
-
 ## Requisitos
 
-Testado no Ubuntu 24.04 com Python 3.12 e Manim 0.21.0.
+Testado no Ubuntu 24.04 com Python 3.12 e Manim 0.22.0.
 
 ### Pacotes do sistema
 
@@ -330,18 +399,19 @@ acentos, por isso vão entre aspas:
 ```bash
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
 
-manim -pql "src/Componentes de um sistema de RF/componentes_sistema_rf.py" ComponentesSistemaRF
-manim -pql "src/Modelagem de uma cavidade de RF/modelagem_cavidade.py" ModelagemCavidade
-manim -pql "src/Filtros/filtros.py" Filtros
-manim -pql "src/Detecção de amplitude e fase em RF/IQ sampling/iq_sampling.py" IQSampling
-manim -pql "src/Detecção de amplitude e fase em RF/Non-IQ sampling/non_iq_sampling.py" NonIQSampling
-manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion
-manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/decimador.py" Decimador
-manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_cic.py" FiltroCIC
-manim -pql "src/Detecção de amplitude e fase em RF/Digital Down Conversion/filtro_fir.py" FiltroFIR
-manim -pql "src/Signal Conditioning and Down Conversion/Mixer/mixer.py" Mixer
-manim -pql "src/Up-conversion/up_conversion.py" UpConversion
-manim -pql "src/DSP/1 - Fundamentos de Sinais e Sistemas Discretos/fundamentos_sinais_discretos.py" FundamentosSinaisDiscretos
+manim -pql "src/1 - Componentes de um sistema de RF/componentes_sistema_rf.py" ComponentesSistemaRF
+manim -pql "src/2 - Fundamentos de Sinais e Sistemas Discretos/fundamentos_sinais_discretos.py" FundamentosSinaisDiscretos
+manim -pql "src/3 - Amostragem e Aliasing/amostragem_aliasing.py" AmostragemAliasing
+manim -pql "src/4 - Filtros/filtros.py" Filtros
+manim -pql "src/5 - Modelagem de uma cavidade de RF/modelagem_cavidade.py" ModelagemCavidade
+manim -pql "src/6 - Mixer/mixer.py" Mixer
+manim -pql "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling
+manim -pql "src/7 - Detecção de amplitude e fase em RF/2 - Non-IQ sampling/non_iq_sampling.py" NonIQSampling
+manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion
+manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/1 - Decimador/decimador.py" Decimador
+manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/2 - Filtro CIC/filtro_cic.py" FiltroCIC
+manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/3 - Filtro FIR/filtro_fir.py" FiltroFIR
+manim -pql "src/8 - Up-conversion/up_conversion.py" UpConversion
 ```
 
 O `-p` abre o vídeo assim que ele termina de renderizar. O vídeo fica em
@@ -349,16 +419,18 @@ O `-p` abre o vídeo assim que ele termina de renderizar. O vídeo fica em
 
 ```
 media/videos/componentes_sistema_rf/480p15/ComponentesSistemaRF.mp4
-media/videos/modelagem_cavidade/480p15/ModelagemCavidade.mp4
+media/videos/fundamentos_sinais_discretos/480p15/FundamentosSinaisDiscretos.mp4
+media/videos/amostragem_aliasing/480p15/AmostragemAliasing.mp4
 media/videos/filtros/480p15/Filtros.mp4
+media/videos/modelagem_cavidade/480p15/ModelagemCavidade.mp4
+media/videos/mixer/480p15/Mixer.mp4
 media/videos/iq_sampling/480p15/IQSampling.mp4
 media/videos/non_iq_sampling/480p15/NonIQSampling.mp4
 media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
 media/videos/decimador/480p15/Decimador.mp4
 media/videos/filtro_cic/480p15/FiltroCIC.mp4
 media/videos/filtro_fir/480p15/FiltroFIR.mp4
-media/videos/mixer/480p15/Mixer.mp4
-media/videos/fundamentos_sinais_discretos/480p15/FundamentosSinaisDiscretos.mp4
+media/videos/up_conversion/480p15/UpConversion.mp4
 ```
 
 ### Qualidade de renderização
@@ -374,10 +446,10 @@ Outras opções úteis:
 
 ```bash
 # Renderiza só o último quadro como PNG
-manim -sql "src/Filtros/filtros.py" Filtros
+manim -sql "src/4 - Filtros/filtros.py" Filtros
 
 # Exporta como GIF
-manim -ql --format gif "src/Filtros/filtros.py" Filtros
+manim -ql --format gif "src/4 - Filtros/filtros.py" Filtros
 ```
 
 ## Personalização
