@@ -25,7 +25,7 @@ raiz. Por exemplo, o assunto 7.3.2 é
 |---|---|---|---|---|---|
 | 1 | Componentes de um sistema de RF | [.md](docs/1%20-%20Componentes%20de%20um%20sistema%20de%20RF/Componentes%20de%20um%20sistema%20de%20RF.md) | [componentes_sistema_rf.py](src/1%20-%20Componentes%20de%20um%20sistema%20de%20RF/componentes_sistema_rf.py) | `ComponentesSistemaRF` | ~4 min |
 | 2 | Fundamentos de Sinais e Sistemas Discretos | [.md](docs/2%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos.md) | [fundamentos_sinais_discretos.py](src/2%20-%20Fundamentos%20de%20Sinais%20e%20Sistemas%20Discretos/fundamentos_sinais_discretos.py) | `FundamentosSinaisDiscretos` | ~11 min |
-| 3 | Amostragem e Aliasing | [.md](docs/3%20-%20Amostragem%20e%20Aliasing/Amostragem%20e%20Aliasing.md) | [amostragem_aliasing.py](src/3%20-%20Amostragem%20e%20Aliasing/amostragem_aliasing.py) | `AmostragemAliasing` | ~5 min |
+| 3 | Amostragem e Aliasing | [.md](docs/3%20-%20Amostragem%20e%20Aliasing/Amostragem%20e%20Aliasing.md) | [amostragem_aliasing.py](src/3%20-%20Amostragem%20e%20Aliasing/amostragem_aliasing.py) | `AmostragemAliasing` | ~6 min |
 | 4 | Filtros | [.md](docs/4%20-%20Filtros/Filtros.md) | [filtros.py](src/4%20-%20Filtros/filtros.py) | `Filtros` | ~3 min |
 | 5 | Modelagem de uma cavidade de RF | [.md](docs/5%20-%20Modelagem%20de%20uma%20cavidade%20de%20RF/Modelagem%20de%20uma%20cavidade%20de%20RF.md) | [modelagem_cavidade.py](src/5%20-%20Modelagem%20de%20uma%20cavidade%20de%20RF/modelagem_cavidade.py) | `ModelagemCavidade` | ~3 min |
 | 6 | Mixer | [.md](docs/6%20-%20Mixer/Mixer.md) | [mixer.py](src/6%20-%20Mixer/mixer.py) | `Mixer` | ~8 min |
@@ -224,18 +224,8 @@ A ordem abaixo é a do vídeo.
     fasor medido (`Δφ ≈ A₃/A₁`, −40 dBc → 0,57°) e as quatro saídas possíveis.
 12. **Resumo.**
 
-Para gerar o vídeo, a partir da raiz do repositório:
-
-```bash
-source venv/bin/activate
-export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0   # veja Problemas comuns
-
-manim -pql "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling   # rascunho 480p
-manim -pqh "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling   # final 1080p
-```
-
-O arquivo sai em `media/videos/iq_sampling/480p15/IQSampling.mp4` (ou `1080p60/`
-com `-qh`), e o `-p` abre o vídeo assim que ele fica pronto.
+Para gerar o vídeo: `make IQSampling`, ou `make IQSampling Q=h` para a versão em
+1080p (veja [Executar](#executar)).
 
 Na mesma pasta, [`iq_sampling2.ipynb`](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/1%20-%20IQ%20sampling/iq_sampling2.ipynb)
 reproduz numericamente **todas as cenas acima**, na mesma ordem: a identidade
@@ -393,63 +383,65 @@ pip install manim
 
 ## Executar
 
-Com o venv ativado, a partir da raiz do repositório. Os caminhos têm espaços e
-acentos, por isso vão entre aspas:
+A partir da raiz do repositório, o alvo é o **nome da cena** — a coluna *Cena*
+da tabela de assuntos:
 
 ```bash
-export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
+make                            # lista as cenas disponíveis
+make DigitalDownConversion      # renderiza em 480p e abre o vídeo ao terminar
+make FiltroCIC Q=h              # versão final, 1080p
+make AmostragemAliasing P=0     # não abre o vídeo ao terminar
+make todas                      # renderiza tudo
+make limpar                     # apaga os vídeos gerados
+```
 
-manim -pql "src/1 - Componentes de um sistema de RF/componentes_sistema_rf.py" ComponentesSistemaRF
-manim -pql "src/2 - Fundamentos de Sinais e Sistemas Discretos/fundamentos_sinais_discretos.py" FundamentosSinaisDiscretos
-manim -pql "src/3 - Amostragem e Aliasing/amostragem_aliasing.py" AmostragemAliasing
+O nome do arquivo também serve, e maiúsculas não importam: `make filtro_cic` faz
+o mesmo que `make FiltroCIC`. Com `bash-completion` instalado, `make <TAB>`
+completa os nomes.
+
+O `make` é só uma casca para [`render.sh`](render.sh), que pode ser usado direto
+e aceita mais opções:
+
+```bash
+./render.sh --lista             # cenas e a pasta de cada uma
+./render.sh FiltroCIC -q h -n   # 1080p, sem abrir no fim
+./render.sh --todas             # renderiza tudo
+./render.sh --onde decimador    # mostra a qual arquivo e cena um nome resolve
+./render.sh --ambiente          # mostra qual manim será usado
+./render.sh Mixer -- -s         # depois de -- vai tudo direto para o manim
+```
+
+O script existe para resolver três chatices de uma vez: os caminhos dos `.py`
+têm espaços e acentos; o Cairo precisa do `LD_PRELOAD` da `libglib`; e o manim
+pode estar no `venv/` ou no `PATH`. Ele testa os candidatos e usa o primeiro que
+responde, então não é preciso ativar o venv antes.
+
+Para chamar o manim na mão, o formato é o de sempre — note as aspas, por causa
+dos espaços no caminho:
+
+```bash
 manim -pql "src/4 - Filtros/filtros.py" Filtros
-manim -pql "src/5 - Modelagem de uma cavidade de RF/modelagem_cavidade.py" ModelagemCavidade
-manim -pql "src/6 - Mixer/mixer.py" Mixer
-manim -pql "src/7 - Detecção de amplitude e fase em RF/1 - IQ sampling/iq_sampling.py" IQSampling
-manim -pql "src/7 - Detecção de amplitude e fase em RF/2 - Non-IQ sampling/non_iq_sampling.py" NonIQSampling
-manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/digital_down_conversion.py" DigitalDownConversion
-manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/1 - Decimador/decimador.py" Decimador
-manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/2 - Filtro CIC/filtro_cic.py" FiltroCIC
-manim -pql "src/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/3 - Filtro FIR/filtro_fir.py" FiltroFIR
-manim -pql "src/8 - Up-conversion/up_conversion.py" UpConversion
-```
-
-O `-p` abre o vídeo assim que ele termina de renderizar. O vídeo fica em
-`media/videos/<nome do .py>/<qualidade>/<Cena>.mp4`; por exemplo, com `-ql`:
-
-```
-media/videos/componentes_sistema_rf/480p15/ComponentesSistemaRF.mp4
-media/videos/fundamentos_sinais_discretos/480p15/FundamentosSinaisDiscretos.mp4
-media/videos/amostragem_aliasing/480p15/AmostragemAliasing.mp4
-media/videos/filtros/480p15/Filtros.mp4
-media/videos/modelagem_cavidade/480p15/ModelagemCavidade.mp4
-media/videos/mixer/480p15/Mixer.mp4
-media/videos/iq_sampling/480p15/IQSampling.mp4
-media/videos/non_iq_sampling/480p15/NonIQSampling.mp4
-media/videos/digital_down_conversion/480p15/DigitalDownConversion.mp4
-media/videos/decimador/480p15/Decimador.mp4
-media/videos/filtro_cic/480p15/FiltroCIC.mp4
-media/videos/filtro_fir/480p15/FiltroFIR.mp4
-media/videos/up_conversion/480p15/UpConversion.mp4
 ```
 
 ### Qualidade de renderização
 
-| Flag  | Resolução | Uso             |
-|-------|-----------|-----------------|
-| `-ql` | 480p15    | rascunho rápido |
-| `-qm` | 720p30    | revisão         |
-| `-qh` | 1080p60   | versão final    |
-| `-qk` | 2160p60   | 4K              |
+| `Q=` | Resolução | Uso |
+|---|---|---|
+| `l` (padrão) | 480p15 | rascunho rápido |
+| `m` | 720p30 | revisão |
+| `h` | 1080p60 | versão final |
+| `k` | 2160p60 | 4K |
 
-Outras opções úteis:
+Os vídeos saem em `media/videos/<nome do .py>/<qualidade>/<Cena>.mp4` — por
+exemplo, `media/videos/filtro_cic/480p15/FiltroCIC.mp4`. O caminho exato é
+impresso ao fim de cada renderização.
+
+Outras opções úteis, passadas ao manim depois de `--`:
 
 ```bash
-# Renderiza só o último quadro como PNG
-manim -sql "src/4 - Filtros/filtros.py" Filtros
-
-# Exporta como GIF
-manim -ql --format gif "src/4 - Filtros/filtros.py" Filtros
+./render.sh Filtros -- -s              # só o último quadro, como PNG
+./render.sh Filtros -- --format gif    # exporta como GIF
+./render.sh Filtros -- -n 0,5          # só as animações 0 a 5 (teste rápido)
 ```
 
 ## Personalização
