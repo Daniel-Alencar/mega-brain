@@ -4,6 +4,7 @@
 #   make DigitalDownConversion      rascunho 480p, abre o vídeo ao terminar
 #   make FiltroCIC Q=h              versão final, 1080p
 #   make AmostragemAliasing P=0     não abre o vídeo ao terminar
+#   make Decibeis                   assunto 9, a escala em dB
 #   make todas                      renderiza tudo
 #   make limpar                     apaga os vídeos gerados
 #

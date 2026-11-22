@@ -36,6 +36,7 @@ raiz. Por exemplo, o assunto 7.3.2 é
 | 7.3.2 | DDC: Filtro CIC | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/Filtro%20CIC.md) | [filtro_cic.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/filtro_cic.py) | `FiltroCIC` | ~7 min |
 | 7.3.3 | DDC: Filtro FIR | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/Filtro%20FIR.md) | [filtro_fir.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/filtro_fir.py) | `FiltroFIR` | ~2 min |
 | 8 | Up-conversion | [.md](docs/8%20-%20Up-conversion/Up-conversion.md) | [up_conversion.py](src/8%20-%20Up-conversion/up_conversion.py) | `UpConversion` | ~5 min |
+| 9 | Decibéis | [.md](docs/9%20-%20Decibéis/Decibéis.md) | [decibeis.py](src/9%20-%20Decibéis/decibeis.py) | `Decibeis` | ~5 min |
 
 A ordem segue a cadeia de dependências — **o sistema → a matemática → o sinal
 digitalizado → os blocos analógicos → a detecção → a geração**:
@@ -55,6 +56,10 @@ digitalizado → os blocos analógicos → a detecção → a geração**:
   corrige o *droop* do CIC).
 - **8** fecha a volta: do I/Q digital de novo até a portadora, reaproveitando o
   fasor, o NCO e a frequência imagem já vistos.
+- **9** é de apoio e pode ser visto a qualquer momento: a escala em dB, usada
+  em todo gráfico de espectro a partir do **3**. Vale assistir assim que o
+  primeiro eixo em dB aparecer — ele termina lendo, parte por parte, o gráfico
+  do FIR de **7.3.3**.
 
 ### Relação com o currículo de DSP
 
@@ -357,6 +362,28 @@ Exemplo usado: f_IF = 20 MHz, f_LO = 480 MHz, f_RF = 500 MHz, imagem em 460 MHz.
 9. **Comparação.** Homodino × banda dupla × banda lateral única, e a supressão
    de banda lateral em dBc.
 
+### 9 · Decibéis
+
+1. **Por que uma escala logarítmica.** A resposta de um FIR em escala linear,
+   onde a faixa de rejeição parece zero; a mesma curva convertida para dB, onde
+   os lóbulos aparecem.
+2. **O decibel é uma razão.** `dB = 10·log₁₀(P_s/P_e)` e duas réguas lado a lado:
+   cada fator de 10 na razão de potência é um passo de 10 dB; razão 1 é 0 dB.
+3. **O 10 e o 20.** `P ∝ A²`, então `10·log(P) = 20·log(A)`; amplitude à metade e
+   potência a um quarto dão os mesmos −6,02 dB.
+4. **A tabela de bolso.** 0, −3, −6, −10, −20, −40 e −60 dB com amplitude,
+   potência e uma barra do que sobra, e as três regras: −6 dB = amplitude ÷ 2,
+   −20 dB = ÷ 10, −3 dB = potência ÷ 2 (o corte de um filtro).
+5. **Cascata vira soma.** 1 mW × 100 × 0,5 × 0,1 = 5 mW contra
+   0 dBm + 20 − 3 − 10 = 7 dBm.
+6. **dBm, dBc e dBFS.** Uma régua de potência de 1 pW a 100 kW; um espúrio em
+   −40 dBc (1% da portadora, 0,57° de erro no IQ sampling); e o piso de −98 dBFS
+   de um ADC de 16 bits.
+7. **Lendo um gráfico de verdade.** O FIR de 11, 31 e 101 taps do assunto 7.3.3:
+   0 dB na passagem, −6 dB no corte, quanto sobra de uma interferência em f_s/4
+   (79 mV, 1,1 mV e 0,65 mV de 1 V) e por que os espetos até o piso são zeros.
+8. **Resumo.**
+
 ## Requisitos
 
 Testado no Ubuntu 24.04 com Python 3.12 e Manim 0.22.0.
@@ -391,6 +418,7 @@ make                            # lista as cenas disponíveis
 make DigitalDownConversion      # renderiza em 480p e abre o vídeo ao terminar
 make FiltroCIC Q=h              # versão final, 1080p
 make AmostragemAliasing P=0     # não abre o vídeo ao terminar
+make Decibeis                   # o assunto de apoio sobre a escala em dB
 make todas                      # renderiza tudo
 make limpar                     # apaga os vídeos gerados
 ```
