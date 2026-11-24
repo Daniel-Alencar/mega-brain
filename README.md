@@ -33,7 +33,7 @@ raiz. Por exemplo, o assunto 7.3.2 é
 | 7.2 | Detecção: Non-IQ sampling | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/2%20-%20Non-IQ%20sampling/Non-IQ%20sampling.md) | [non_iq_sampling.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/2%20-%20Non-IQ%20sampling/non_iq_sampling.py) | `NonIQSampling` | ~3 min |
 | 7.3 | Detecção: Digital Down Conversion | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/Digital%20Down%20Conversion.md) | [digital_down_conversion.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/digital_down_conversion.py) | `DigitalDownConversion` | ~6 min |
 | 7.3.1 | DDC: Decimador | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/1%20-%20Decimador/Decimador.md) | [decimador.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/1%20-%20Decimador/decimador.py) | `Decimador` | ~2 min |
-| 7.3.2 | DDC: Filtro CIC | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/Filtro%20CIC.md) | [filtro_cic.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/filtro_cic.py) | `FiltroCIC` | ~7 min |
+| 7.3.2 | DDC: Filtro CIC | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/Filtro%20CIC.md) | [filtro_cic.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/2%20-%20Filtro%20CIC/filtro_cic.py) | `FiltroCIC` | ~9,5 min |
 | 7.3.3 | DDC: Filtro FIR | [.md](docs/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/Filtro%20FIR.md) | [filtro_fir.py](src/7%20-%20Detecção%20de%20amplitude%20e%20fase%20em%20RF/3%20-%20Digital%20Down%20Conversion/3%20-%20Filtro%20FIR/filtro_fir.py) | `FiltroFIR` | ~2 min |
 | 8 | Up-conversion | [.md](docs/8%20-%20Up-conversion/Up-conversion.md) | [up_conversion.py](src/8%20-%20Up-conversion/up_conversion.py) | `UpConversion` | ~5 min |
 | 9 | Decibéis | [.md](docs/9%20-%20Decibéis/Decibéis.md) | [decibeis.py](src/9%20-%20Decibéis/decibeis.py) | `Decibeis` | ~5 min |
@@ -302,7 +302,11 @@ Exemplo usado: N = 9, M = 2 (f_s = 4,5·f_IF, Δφ = 80°).
 
 ### 7.3.2 · Filtro CIC
 
-Exemplo usado: atraso do comb D = 4.
+Os três parâmetros — R (fator de decimação), D (atraso diferencial do comb) e M (número de
+estágios, o N de parte da literatura) — são apresentados na abertura e ficam num selo no
+alto à direita o vídeo inteiro, atualizado sempre que o exemplo muda. A janela do filtro é
+R·D, e vale 4 em quase todo o vídeo: itens 1 a 8 com R = 1 e D = 4 (sem decimar), itens 10
+em diante com R = 4 e D = 1. Nenhum item cita outro pelo número dentro do vídeo.
 
 1. **Lendo o diagrama.** Os quatro símbolos — seta, somador (com os sinais + e −),
    registrador `z⁻¹` e nó — e uma amostra atravessando o registrador em dois ciclos.
@@ -322,13 +326,33 @@ Exemplo usado: atraso do comb D = 4.
    traçada ponto a ponto enquanto a frequência varre de 0 a f_s/2.
 8. **Lendo o gráfico.** O que é cada eixo, o ganho D em DC, os zeros em múltiplos de f_s/D,
    lóbulo principal e lóbulos laterais (≈ −11 dB) e a fórmula `|sin(πDf/f_s)/sin(πf/f_s)|`.
-9. **Trocando o fator.** D = 2, 4, 8 e 16 na frequência (primeiro zero em f_s/D) e no tempo
-   (o mesmo sinal ruidoso filtrado e decimado por cada fator, até o droop visível em D = 16).
+9. **Agora decimando: R = 2, 4, 8 e 16.** O ponto em que o filtro passa a jogar amostras
+   fora: a janela deixa de vir do comb e passa a vir do R, com D = 1. Na frequência (primeiro
+   zero em f_s/R, com a taxa de saída caindo junto) e no tempo (o mesmo sinal ruidoso
+   filtrado e decimado por cada fator, até o droop visível em R = 16).
 10. **Anti-aliasing sob medida.** As bandas em torno de f_s/4, f_s/2 e 3f_s/4 dobram sobre a
     banda base ao decimar por 4 — e os zeros do CIC caem exatamente no centro delas.
 11. **Com o decimador.** ↓4 entre integrador e comb: o comb, com atraso de 1 na taxa
     lenta, subtrai 4 amostras rápidas (Hogenauer).
-12. **N estágios.** `|H(f)|ᴺ` em dB: lóbulos em −11, −23 e −34 dB e o droop que o FIR corrige.
+12. **O atraso diferencial D.** Com o decimador no meio, a janela deixou de ser um
+    número só: o comb da taxa lenta pode ter `z⁻ᴰ`, e a janela equivalente vale `R·D`
+    (a janela do exemplo é 4 desde o começo: antes com R = 1 e D = 4, agora com R = 4 e
+    D = 1). Com R = 4
+    fixo, e portanto a mesma taxa de saída, D = 1, 2 e 4 movem os zeros para a
+    esquerda sobre marcos que não se mexem — a banda útil, o Nyquist da saída e as
+    faixas que dobram. D = 2 pousa o primeiro zero exatamente no Nyquist da saída;
+    D = 4 joga um zero para dentro da banda útil, que é por que um CIC real usa
+    D = 1 ou 2. Fecha com as três letras R, D e M lado a lado.
+13. **O número de estágios M.** O que é um estágio (um integrador + um comb) e por que
+    o nome é *Cascaded*; o que M faz com a **janela** (retangular → triangular → sino,
+    pela convolução `h_M = h₁ * … * h₁`); **o gráfico de |H(f)| refeito com M = 4**, em
+    escala linear: os zeros não se movem (quem os posiciona é D) mas viram zeros de
+    ordem 4, o lóbulo lateral cai de 0,272 para 0,0055 e a banda útil afunda de 0,91
+    para 0,67 — e o lóbulo já não se vê na escala linear, o que motiva o gráfico
+    seguinte; `|H(f)|ᴹ` em dB com lóbulos em −11, −23, −34 e −45 dB mais o droop, o
+    atraso e os bits que cada estágio cobra; e o mesmo sinal com M = 1, 2, 3 e 4,
+    mostrando que o ruído quase não melhora depois do primeiro estágio — o ganho está
+    na rejeição que protege a decimação.
 
 ### 7.3.3 · Filtro FIR
 

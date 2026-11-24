@@ -10,22 +10,41 @@ Renderização (a partir da raiz do repositório):
 Requer LaTeX (MathTex).
 
 Roteiro (segue "docs/7 - Detecção de amplitude e fase em RF/3 - Digital Down Conversion/2 - Filtro CIC/Filtro CIC"):
-    Abertura
+    Abertura: o que é um CIC e os três parâmetros R, D e M
     Cena  1 - Lendo um diagrama de blocos: seta, somador, registrador z^-1 e nó
     Cena  2 - A estrutura: integrador (realimentado) e comb (só para frente)
     Cena  3 - O integrador ciclo a ciclo: o laço que guarda tudo
     Cena  4 - O comb ciclo a ciclo: z^-4 é uma fila de quatro registradores
-    Cena  5 - Os dois juntos: uma janela de D amostras que desliza
+    Cena  5 - Os dois juntos: uma janela de R·D amostras que desliza
     Cena  6 - Por que isso filtra: o rápido se cancela, o lento se soma
     Cena  7 - Medindo a resposta em frequência: uma senoide de cada vez
     Cena  8 - Lendo o gráfico |H(f)|: eixos, ganho D, zeros e lóbulos
-    Cena  9 - Trocando o fator: D = 2, 4, 8 e 16
+    Cena  9 - Agora decimando: R = 2, 4, 8 e 16 (D = 1), na frequência e no tempo
     Cena 10 - Decimar sem aliasing: os zeros caem onde as bandas dobram
     Cena 11 - Onde o decimador entra: integrador rápido, comb lento
-    Cena 12 - Por que "Cascaded": N estágios em cascata
+    Cena 12 - D, o atraso diferencial do comb: com R fixo, a janela é R·D
+    Cena 13 - M, o número de estágios: o que é um estágio, o que M faz com a
+              janela, com |H(f)| (linear e em dB) e com o sinal
     Resumo
 
-Exemplo usado nas cenas 2 a 8: atraso do comb D = 4 (janela de 4 amostras).
+Notação (a de Hogenauer, usada em todo o arquivo):
+
+    R  fator de decimação       quantas amostras se descarta
+    D  atraso diferencial       quantos registradores o comb tem (z^-D)
+    M  número de estágios       quantas vezes o filtro é repetido (N em
+                               parte da literatura)
+
+A janela do filtro tem R·D amostras, e os três valores em uso aparecem o vídeo
+inteiro num selo no alto à direita (método parametros()). O exemplo evolui assim:
+
+    abertura a cena 8   R = 1, D = 4, M = 1   janela 4, sem decimar
+    cena  9             R = 2/4/8/16, D = 1   o filtro passa a decimar
+    cenas 10 e 11       R = 4, D = 1, M = 1   janela 4 de novo: o exemplo do vídeo
+    cena 12             R = 4, D = 1/2/4      só o D muda; a taxa de saída não
+    cena 13             R = 4, D = 1, M = 1..4
+
+Nenhuma cena cita outra pelo número: as referências são sempre ao que foi visto
+("o mesmo gráfico de antes"), para o vídeo poder ser assistido sem índice.
 """
 
 import numpy as np
@@ -43,7 +62,7 @@ COR_EIXO = GREY_B
 FUNDO = "#0e1117"
 
 EIXO_CFG = {"include_tip": False, "stroke_width": 2, "color": COR_EIXO}
-D = 4                                    # atraso diferencial do comb
+D = 4                                    # janela do exemplo: R·D = 4 amostras
 X_EXEMPLO = [2, 1, 3, 1, 2, 3, 1, 2]     # entrada numérica das cenas 3 a 5
 X_LONGO = X_EXEMPLO * 2                  # 16 amostras, para mostrar o acumulador crescendo
 
@@ -160,6 +179,8 @@ def ganho_db(f, d=D, n=1, piso=-80.0):
 class FiltroCIC(Scene):
     def construct(self):
         self.camera.background_color = FUNDO
+        self.selo = None          # o selo de parâmetros, fixo no alto à direita
+        self.selo_vals = None
         self.abertura()
         self.cena_simbolos()
         self.cena_estrutura()
@@ -172,6 +193,7 @@ class FiltroCIC(Scene):
         self.cena_outros_fatores()
         self.cena_aliasing()
         self.cena_decimacao()
+        self.cena_atraso_comb()
         self.cena_estagios()
         self.cena_resumo()
 
@@ -198,11 +220,41 @@ class FiltroCIC(Scene):
         return nova
 
     def limpar(self):
-        for m in self.mobjects:
+        """Limpa a tela, menos o selo de parâmetros, que atravessa o vídeo."""
+        alvos = [m for m in self.mobjects if m is not self.selo]
+        for m in alvos:
             m.clear_updaters()
-        if self.mobjects:
-            self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.8)
+        if alvos:
+            self.play(*[FadeOut(m) for m in alvos], run_time=0.8)
         self.wait(0.2)
+
+    def parametros(self, R=None, D=None, M=None):
+        """Selo no alto à direita com os três parâmetros do exemplo em uso.
+
+        Sem argumentos, retira o selo. R e D são inteiros (a janela R·D é
+        calculada); M pode ser texto, para as cenas que comparam vários M.
+        """
+        if R is None:
+            if self.selo is not None:
+                self.play(FadeOut(self.selo), run_time=0.4)
+                self.selo, self.selo_vals = None, None
+            return
+        if (R, D, M) == self.selo_vals:
+            return
+
+        def par(letra, valor, cor):
+            return VGroup(tex(letra, cor, 26), txt(f"= {valor}", 17, GREY_A)).arrange(RIGHT, buff=0.1)
+
+        novo = VGroup(VGroup(par("R", R, COR_DEC), par("D", D, COR_COMB), par("M", M, COR_JANELA)
+                             ).arrange(RIGHT, buff=0.3),
+                      txt(f"janela R·D = {R * D}", 17, GREY_B)
+                      ).arrange(DOWN, buff=0.1, aligned_edge=RIGHT).to_corner(UR, buff=0.26)
+        self.selo_vals = (R, D, M)
+        if self.selo is None:
+            self.selo = novo
+            self.play(FadeIn(novo, shift=DOWN * 0.15), run_time=0.6)
+        else:
+            self.play(Transform(self.selo, novo), run_time=0.5)
 
     def tabela(self, linhas, x0=-4.7, dx=1.2, y0=2.35, dy=0.62):
         """Tabela de valores por instante n. linhas = [(rotulo_tex, cor, valores ou None), ...]."""
@@ -235,6 +287,34 @@ class FiltroCIC(Scene):
         self.play(FadeIn(nota, shift=UP * 0.2))
         self.wait(1.8)
         self.play(FadeOut(g))
+
+        # --- os três parâmetros, antes de qualquer outra coisa ---------------
+        cab = Text("Três números definem um CIC", font_size=34, weight=BOLD).move_to(P(0, 2.7))
+        letras = VGroup()
+        for k, (sig, nome, oque, cor) in enumerate([
+                ("R", "fator de decimação", "de quanto a taxa de amostragem cai", COR_DEC),
+                ("D", "atraso diferencial", "quantos registradores o comb tem", COR_COMB),
+                ("M", "número de estágios", "quantas vezes o filtro é repetido", COR_JANELA)]):
+            y = 1.6 - 0.62 * k
+            letras.add(tex(sig, cor, 34).move_to(P(-5.2, y)))
+            letras.add(txt(nome, 22, cor).move_to(P(-4.7, y), aligned_edge=LEFT))
+            letras.add(txt(oque, 21, GREY_B).move_to(P(0.3, y), aligned_edge=LEFT))
+        janela = tex_partes([(r"\text{a janela do filtro tem }", WHITE), (r"R", COR_DEC), (r"\cdot", WHITE),
+                             (r"D", COR_COMB), (r"\text{ amostras}", WHITE)], 32).move_to(P(0, -0.85))
+        exemplo = txt("o exemplo deste vídeo começa com R = 1, D = 4 e M = 1: uma janela de 4 amostras",
+                      22, COR_JANELA).move_to(P(0, -1.75))
+        onde = txt("os três ficam no canto da tela o vídeo inteiro, e mudam quando o exemplo mudar",
+                   21, GREY_B).move_to(P(0, -2.55))
+        self.play(FadeIn(cab), run_time=0.7)
+        self.play(LaggedStart(*[FadeIn(m, shift=RIGHT * 0.15) for m in letras], lag_ratio=0.07), run_time=1.9)
+        self.play(Write(janela), run_time=1.2)
+        self.wait(0.9)
+        self.play(FadeIn(exemplo, shift=UP * 0.15))
+        self.wait(1.2)
+        self.play(FadeIn(onde, shift=UP * 0.15))
+        self.parametros(1, 4, 1)
+        self.wait(1.8)
+        self.play(FadeOut(VGroup(cab, letras, janela, exemplo, onde)), run_time=0.8)
 
     # ================================================================== CENA 1
     def cena_simbolos(self):
@@ -288,9 +368,10 @@ class FiltroCIC(Scene):
         ciclo = txt("ciclo n: a amostra entra e fica guardada", 18, COR_JANELA).move_to(P(-0.9, y_demo))
         self.play(FadeIn(amostra, scale=0.6), run_time=0.4)
         self.play(MoveAlongPath(amostra, caminho([P(-6.8, y_demo), P(xs, y_demo), s3.get_center()])),
-                  FadeIn(ciclo), run_time=1.1)
+                  FadeIn(ciclo), s3[1].animate.set_opacity(0.12), run_time=1.1)
         self.wait(0.9)
         self.play(MoveAlongPath(amostra, caminho([s3.get_center(), P(xs, y_demo), P(-4.1, y_demo)])),
+                  s3[1].animate.set_opacity(1.0),
                   Transform(ciclo, txt("ciclo n+1: ela sai, atrasada de um ciclo", 18, COR_JANELA
                                        ).move_to(P(-0.9, y_demo))), run_time=1.2)
         self.wait(1.6)
@@ -396,7 +477,7 @@ class FiltroCIC(Scene):
         sep = Line(P(-0.1, 2.66), P(6.2, 2.66), color=COR_EIXO, stroke_width=1.5)
         eq = tex(r"I[n] = I[n-1] + x[n]", COR_INT, 32).move_to(P(-3.3, -1.3))
 
-        leg = self.legenda("O mesmo circuito da cena anterior, agora com números passando por ele")
+        leg = self.legenda("O circuito de agora há pouco, com números passando por ele")
         self.play(FadeIn(diagrama), run_time=1.2)
         self.play(FadeIn(cabs), Create(sep), Write(eq))
         leg = self.legenda("Ciclo 0: o registrador começa zerado, então ele entrega 0 ao somador", leg, COR_JANELA)
@@ -440,7 +521,7 @@ class FiltroCIC(Scene):
         self.wait(1.6)
 
         # --- o acumulador cresce sem parar ------------------------------------
-        self.trocar_titulo(titulo, "3 · O integrador sozinho não filtra: ele só cresce")
+        self.trocar_titulo(titulo, "3 · O integrador sozinho só cresce")
         self.play(FadeOut(diagrama), FadeOut(eq), FadeOut(soma), run_time=0.8)
         IL = integrar(X_LONGO)
         ax = eixos_tempo(P(-3.4, 1.0), 6.0, 3.0, [0, 16, 4], [0, 34, 10])
@@ -569,7 +650,7 @@ class FiltroCIC(Scene):
                                              (r"y[n]", COR_COMB, y)])
         x0, dx, y0, dy = -4.7, 1.2, 2.35, 0.62
 
-        leg = self.legenda("A mesma entrada das cenas anteriores, agora com as três linhas juntas")
+        leg = self.legenda("A mesma entrada de antes, agora com as três linhas juntas")
         self.play(FadeIn(rotulos[:3]), FadeIn(celulas[0]), FadeIn(celulas[1]), FadeIn(celulas[2]), Create(sep))
         self.play(FadeIn(rotulos[3]))
         leg = self.legenda("A janela amarela mostra quais entradas estão dentro da soma naquele instante",
@@ -865,18 +946,18 @@ class FiltroCIC(Scene):
         self.play(FadeIn(exp2, shift=UP * 0.15))
         self.wait(1.4)
         self.play(FadeIn(exp3, shift=UP * 0.15))
-        leg = self.legenda("Com D no lugar de 4, essa fórmula descreve qualquer CIC de um estágio", leg, COR_COMB)
+        leg = self.legenda("Com a janela R·D no lugar de 4, ela descreve qualquer CIC de um estágio", leg, COR_COMB)
         self.wait(2.2)
         self.limpar()
 
     # ================================================================== CENA 9
     def cena_outros_fatores(self):
         """O mesmo filtro com D = 2, 4, 8 e 16: na frequência e no tempo."""
-        titulo = self.titulo_cena("9 · Trocando o fator: D = 2, 4, 8, 16")
+        titulo = self.titulo_cena("9 · Agora decimando: R = 2, 4, 8, 16")
         ax = Axes(x_range=[0, 0.5, 0.125], y_range=[0, 1.15, 0.25], x_length=7.0, y_length=3.2,
                   axis_config=EIXO_CFG).move_to(P(-2.4, 0.7))
         marcas = marcar_x(ax, [0, 0.125, 0.25, 0.375, 0.5], ["0", "f_s/8", "f_s/4", "3f_s/8", "f_s/2"], 15)
-        r_ax = rotulo_eixo(ax, txt("ganho dividido por D, para as curvas ficarem comparáveis", 17))
+        r_ax = rotulo_eixo(ax, txt("ganho dividido por R·D, para as curvas ficarem comparáveis", 17))
 
         def curva_de(d):
             return ax.plot(lambda f: ganho(f, d) / d, x_range=[0.0008, 0.5, 0.0012], color=COR_COMB, stroke_width=4)
@@ -886,32 +967,38 @@ class FiltroCIC(Scene):
                             for k in range(1, int(0.5 * d) + 1)])
 
         def painel_de(d):
-            return VGroup(tex(rf"D = {d}", COR_COMB, 38),
+            return VGroup(tex(rf"R = {d}", COR_DEC, 38),
+                          txt(f"janela R·D = {d} amostras", 20, WHITE),
                           txt(f"ganho em DC = {d}", 20, WHITE),
                           txt(f"primeiro zero = f_s/{d}", 20, COR_RUIDO),
                           txt(f"taxa de saída = f_s/{d}", 20, WHITE),
                           txt(f"banda útil ≈ f_s/{2 * d}", 20, WHITE),
-                          ).arrange(DOWN, aligned_edge=LEFT, buff=0.34).move_to(P(1.9, 0.7), aligned_edge=LEFT)
+                          ).arrange(DOWN, aligned_edge=LEFT, buff=0.3).move_to(P(1.9, 0.7), aligned_edge=LEFT)
 
         curva, zeros, painel = curva_de(2), zeros_de(2), painel_de(2)
-        leg = self.legenda("Tudo o que vimos vale para qualquer D — só os números mudam")
+        leg = self.legenda("Até aqui a janela de 4 vinha do comb: R = 1, D = 4, sem jogar nenhuma amostra fora")
         self.play(Create(ax), FadeIn(marcas), FadeIn(r_ax))
+        leg = self.legenda("Agora o CIC decima: a janela passa a vir do R, e o comb fica com D = 1", leg, COR_DEC)
+        self.parametros(2, 1, 1)
         self.play(Create(curva), FadeIn(zeros), FadeIn(painel), run_time=1.5)
-        leg = self.legenda("Com D = 2 a janela é mínima: filtro larguíssimo, quase não filtra", leg, COR_COMB)
+        leg = self.legenda("Com R = 2 a janela é mínima: filtro larguíssimo, quase não filtra", leg, COR_COMB)
         self.wait(1.8)
-        for d, texto, cor in [(4, "D = 4: o nosso exemplo — zeros em f_s/4 e f_s/2", COR_COMB),
-                              (8, "D = 8: o dobro de zeros e metade da banda", COR_COMB),
-                              (16, "D = 16: estreitíssimo — e a saída sai 16 vezes mais devagar", COR_COMB)]:
+        for d, texto, cor in [(4, "R = 4: a mesma janela de 4 do nosso exemplo — zeros em f_s/4 e f_s/2",
+                               COR_COMB),
+                              (8, "R = 8: o dobro de zeros e metade da banda", COR_COMB),
+                              (16, "R = 16: estreitíssimo — e a saída sai 16 vezes mais devagar", COR_COMB)]:
             leg = self.legenda(texto, leg, cor)
+            self.parametros(d, 1, 1)
             self.play(Transform(curva, curva_de(d)), Transform(zeros, zeros_de(d)),
                       Transform(painel, painel_de(d)), run_time=1.6)
             self.wait(1.6)
-        leg = self.legenda("A regra é sempre a mesma: primeiro zero em f_s/D e ganho D em DC", leg)
+        leg = self.legenda("A regra é sempre a mesma: primeiro zero em f_s/(R·D) e ganho R·D em DC", leg)
         self.wait(1.8)
         self.play(FadeOut(VGroup(ax, marcas, r_ax, curva, zeros, painel)), run_time=0.8)
 
         # --- o mesmo sinal, quatro fatores -----------------------------------
         self.trocar_titulo(titulo, "9 · O mesmo sinal com quatro fatores")
+        self.parametros(2, 1, 1)
         rng = np.random.default_rng(11)
         nmax = 160
         n = np.arange(nmax)
@@ -936,18 +1023,19 @@ class FiltroCIC(Scene):
                            ).move_to(P(3.3, ys[0]), aligned_edge=LEFT))
         for k, d in enumerate([2, 4, 8, 16]):
             grupos.append(linha(ys[k + 1], media_movel(x, d) / d, GREY_B, d))
-            rotulos.append(txt(f"D = {d}\n{nmax // d} amostras (f_s/{d})", 16, COR_LENTO, line_spacing=0.75
+            rotulos.append(txt(f"R = {d}\n{nmax // d} amostras (f_s/{d})", 16, COR_LENTO, line_spacing=0.75
                                ).move_to(P(3.3, ys[k + 1]), aligned_edge=LEFT))
 
         leg = self.legenda("A mesma entrada ruidosa passando por quatro CICs diferentes", leg)
         self.play(Create(grupos[0][0]), FadeIn(rotulos[0]))
         self.play(Create(grupos[0][1]), run_time=1.6)
         for k, d in enumerate([2, 4, 8, 16]):
-            leg = self.legenda({2: "D = 2: quase nada muda, só duas amostras somadas",
-                                4: "D = 4: o ruído já cai bastante e a onda continua inteira",
-                                8: "D = 8: bem mais limpo, com 1 amostra de saída a cada 8",
-                                16: "D = 16: liso, mas a própria onda já perdeu cerca de 24% da amplitude"
+            leg = self.legenda({2: "R = 2: quase nada muda, só duas amostras somadas",
+                                4: "R = 4: o ruído já cai bastante e a onda continua inteira",
+                                8: "R = 8: bem mais limpo, com 1 amostra de saída a cada 8",
+                                16: "R = 16: liso, mas a própria onda já perdeu cerca de 24% da amplitude"
                                 }[d], leg, COR_LENTO)
+            self.parametros(d, 1, 1)
             self.play(FadeIn(grupos[k + 1], shift=UP * 0.1), FadeIn(rotulos[k + 1]), run_time=1.2)
             self.wait(1.4)
         leg = self.legenda("Esse é o compromisso: mais suave e mais barato, porém mais lento e com droop", leg)
@@ -957,7 +1045,8 @@ class FiltroCIC(Scene):
     # ================================================================= CENA 10
     def cena_aliasing(self):
         """Por que justamente o CIC é o filtro certo para decimar."""
-        self.titulo_cena("10 · Por que o CIC é o filtro certo para decimar")
+        self.titulo_cena("10 · Por que o CIC serve para decimar")
+        self.parametros(4, 1, 1)
         ax = Axes(x_range=[0, 1, 0.25], y_range=[0, 1.15, 1], x_length=11.6, y_length=2.4,
                   axis_config=EIXO_CFG).move_to(P(-0.3, 1.3))
         marcas = marcar_x(ax, [0, 0.25, 0.5, 0.75, 1.0], ["0", "f_s/4", "f_s/2", "3f_s/4", "f_s"], 16)
@@ -985,13 +1074,13 @@ class FiltroCIC(Scene):
                                      angle=0.55, color=COR_RUIDO, stroke_width=3, tip_length=0.18)
                          for c in (0.25, 0.5, 0.75)])
         resp = ax.plot(lambda f: ganho(f) / D, x_range=[0.0008, 0.9992, 0.0015], color=COR_COMB, stroke_width=3.5)
-        r_resp = txt("resposta do CIC com D = 4", 18, COR_COMB).next_to(ax.c2p(0.13, 0.75), RIGHT, buff=0.1)
+        r_resp = txt("resposta do CIC, janela R·D = 4", 18, COR_COMB).next_to(ax.c2p(0.13, 0.75), RIGHT, buff=0.1)
 
         nota = txt("decimar por 4 = ficar com 1 amostra a cada 4. No espectro, tudo o que estiver em torno de\n"
                    "f_s/4, f_s/2 e 3f_s/4 dobra para cima da banda base — e aí não há mais como separar",
                    20, line_spacing=0.85).move_to(P(0, -2.0))
         nota2 = txt("os zeros do CIC caem exatamente no centro dessas bandas:\n"
-                    "ele é o filtro anti-aliasing sob medida para decimar por D",
+                    "ele é o filtro anti-aliasing sob medida para decimar por R",
                     21, COR_COMB, line_spacing=0.85).move_to(P(0, -2.0))
         nota3 = txt("nas bordas dessas bandas a atenuação é bem menor:\n"
                     "o resto é limpo depois por um FIR, já na taxa baixa",
@@ -1025,6 +1114,7 @@ class FiltroCIC(Scene):
     def cena_decimacao(self):
         """Onde o decimador entra na cadeia e por que o comb pode ser z^-1."""
         titulo = self.titulo_cena("11 · Onde o decimador entra")
+        self.parametros(4, 1, 1)
         yA, yB = 2.55, 1.25
         x_in_a = tex(r"x[n]", COR_X, 24).move_to(P(-6.5, yA))
         int_a = caixa("Integrador\nf_s", 1.9, 0.72, COR_INT, 15).move_to(P(-5.0, yA))
@@ -1101,70 +1191,469 @@ class FiltroCIC(Scene):
         self.limpar()
 
     # ================================================================= CENA 12
-    def cena_estagios(self):
-        """O 'Cascaded' do nome: N integradores e N combs."""
-        self.titulo_cena("12 · Por que \"Cascaded\": N estágios")
-        y0 = 2.7
-        xs_i = [-5.3, -4.4, -3.5]
-        xs_c = [-1.1, -0.2, 0.7]
-        blocos = VGroup(tex(r"x[n]", COR_X, 24).move_to(P(-6.4, y0)),
-                        *[caixa("I", 0.8, 0.62, COR_INT, 20).move_to(P(x, y0)) for x in xs_i],
-                        caixa_tex(r"\downarrow R", 0.9, 0.62, COR_DEC, 24).move_to(P(-2.3, y0)),
-                        *[caixa("C", 0.8, 0.62, COR_COMB, 20).move_to(P(x, y0)) for x in xs_c],
-                        tex(r"y[m]", COR_COMB, 24).move_to(P(1.8, y0)))
-        ch_i = BraceBetweenPoints(P(-5.7, y0 - 0.4), P(-3.1, y0 - 0.4), DOWN, color=COR_INT)
-        r_i = txt("N integradores", 16, COR_INT).next_to(ch_i, DOWN, buff=0.06)
-        ch_c = BraceBetweenPoints(P(-1.5, y0 - 0.4), P(1.1, y0 - 0.4), DOWN, color=COR_COMB)
-        r_c = txt("N combs", 16, COR_COMB).next_to(ch_c, DOWN, buff=0.06)
+    def cena_atraso_comb(self):
+        """D, o atraso diferencial, com o decimador no meio: a janela vale R·D."""
+        titulo = self.titulo_cena("12 · O atraso diferencial D")
+        R_DEC = 4
 
-        ax = Axes(x_range=[0, 0.5, 0.125], y_range=[-80, 5, 20], x_length=7.2, y_length=3.2,
-                  axis_config=EIXO_CFG).move_to(P(-2.0, -1.1))
-        marcas = marcar_x(ax, [0, 0.125, 0.25, 0.375, 0.5], ["0", "f_s/8", "f_s/4", "3f_s/8", "f_s/2"], 15)
+        # --- A: as três letras, e a janela como produto R·D ------------------
+        cadeia = VGroup(tex(r"x[n]", COR_X, 24), tex(r"\rightarrow", GREY_A, 24),
+                        caixa("Integrador\nf_s", 1.8, 0.72, COR_INT, 15), tex(r"\rightarrow", GREY_A, 24),
+                        caixa_tex(r"\downarrow R", 0.85, 0.72, COR_DEC, 24), tex(r"\rightarrow", GREY_A, 24),
+                        caixa("Comb  z⁻ᴰ\nf_s/R", 1.8, 0.72, COR_COMB, 15), tex(r"\rightarrow", GREY_A, 24),
+                        tex(r"y[m]", COR_COMB, 24)).arrange(RIGHT, buff=0.2).move_to(P(0, 2.15))
+        realce = SurroundingRectangle(cadeia[6], color=COR_COMB, buff=0.1, corner_radius=0.1)
+        nota_d = txt("o comb da taxa lenta ficou com um registrador só, ou seja D = 1 — "
+                     "mas ele pode ter z⁻ᴰ", 21).move_to(P(0, 1.25))
+        relacao = tex_partes([(r"\text{janela no tempo rápido} = ", WHITE), (r"R", COR_DEC),
+                              (r"\cdot", WHITE), (r"D", COR_COMB), (r"\text{ amostras}", WHITE)], 34
+                             ).move_to(P(0, 0.4))
+        ate_aqui = txt("a janela do nosso exemplo é 4 desde o começo: antes com R = 1 e D = 4,\n"
+                       "agora com R = 4 e D = 1 — nos dois casos R·D = 4", 21, COR_JANELA,
+                       line_spacing=0.85).move_to(P(0, -0.45))
+
+        letras = VGroup()
+        for k, (sig, nome, oque) in enumerate([
+                ("R", "fator de decimação", "quantas amostras se descarta"),
+                ("D", "atraso diferencial do comb", "quantos registradores o comb tem"),
+                ("M", "número de estágios", "quantas vezes o filtro é repetido")]):
+            y = -1.25 - 0.55 * k
+            cor = [COR_DEC, COR_COMB, COR_JANELA][k]
+            letras.add(tex(sig, cor, 30).move_to(P(-5.4, y)))
+            letras.add(txt(nome, 20, cor).move_to(P(-4.9, y), aligned_edge=LEFT))
+            letras.add(txt(oque, 19, GREY_B).move_to(P(0.6, y), aligned_edge=LEFT))
+        r_letras = txt("os três parâmetros de um CIC", 19).move_to(P(-3.3, -0.95))
+
+        leg = self.legenda("Dos três parâmetros, o D é o único que ainda não mexemos")
+        self.play(FadeIn(cadeia), run_time=1.2)
+        self.play(Create(realce), FadeIn(nota_d))
+        leg = self.legenda("D é o atraso diferencial: quantos registradores o comb tem na taxa lenta", leg, COR_COMB)
+        self.wait(1.4)
+        leg = self.legenda("E como cada passo lento vale R rápidos, a janela equivalente é R·D", leg)
+        self.play(Write(relacao), run_time=1.3)
+        self.play(FadeIn(ate_aqui, shift=UP * 0.15))
+        self.wait(1.6)
+        leg = self.legenda("São três letras, e cada uma mexe em uma coisa diferente", leg)
+        self.play(FadeIn(r_letras), FadeIn(letras, shift=UP * 0.1), run_time=1.3)
+        self.wait(2.2)
+        self.play(FadeOut(VGroup(cadeia, realce, nota_d, relacao, ate_aqui, letras, r_letras)), run_time=0.8)
+
+        # --- B: o que D faz com o gráfico, com R fixo ------------------------
+        self.trocar_titulo(titulo, "12 · O que D faz com o gráfico")
+        ax = Axes(x_range=[0, 0.5, 0.125], y_range=[0, 1.15, 0.25], x_length=7.3, y_length=2.9,
+                  axis_config=EIXO_CFG).move_to(P(-2.4, 0.55))
+        marcas = marcar_x(ax, [0, 0.0625, 0.125, 0.25, 0.375, 0.5],
+                          ["0", "f_s/16", "f_s/8", "f_s/4", "3f_s/8", "f_s/2"], 14, 0.12)
+
+        def faixa(a, b, cor, op=0.2):
+            return Polygon(ax.c2p(a, 0), ax.c2p(b, 0), ax.c2p(b, 1.12), ax.c2p(a, 1.12),
+                           stroke_width=0).set_fill(cor, opacity=op)
+
+        util = faixa(0, 0.0625, COR_LENTO, 0.22)
+        r_util = txt("banda\nútil", 16, COR_LENTO, line_spacing=0.8).next_to(ax.c2p(0.031, 1.12), UP, buff=0.08)
+        dobram = VGroup(faixa(0.1875, 0.3125, COR_RUIDO, 0.17), faixa(0.4375, 0.5, COR_RUIDO, 0.17))
+        r_dobram = txt("faixas que dobram ao decimar por 4", 16, COR_RUIDO
+                       ).next_to(ax.c2p(0.33, 1.12), UP, buff=0.08)
+        nyq = DashedLine(ax.c2p(0.125, 0), ax.c2p(0.125, 1.12), color=COR_JANELA, stroke_width=3,
+                         dash_length=0.1)
+
+        def curva_de(d):
+            L = R_DEC * d
+            return ax.plot(lambda f, L=L: ganho(f, L) / L, x_range=[0.0006, 0.5, 0.0006],
+                           color=COR_COMB, stroke_width=4)
+
+        def zeros_de(d):
+            L = R_DEC * d
+            return VGroup(*[Dot(ax.c2p(k / L, 0), radius=0.065, color=COR_RUIDO)
+                            for k in range(1, L // 2 + 1)])
+
+        def topo_banda(d):
+            g = ganho(0.0625, R_DEC * d) / (R_DEC * d)
+            if g < 1e-6:
+                return "zero"
+            return f"{20 * np.log10(g):.1f} dB".replace(".", ",").replace("-", "−")
+
+        def painel_de(d):
+            L = R_DEC * d
+            return VGroup(tex(rf"D = {d}", COR_COMB, 38),
+                          txt(f"janela R·D = {L} amostras", 19, WHITE),
+                          txt(f"1º zero em f_s/{L}", 19, COR_RUIDO),
+                          txt(f"topo da banda útil: {topo_banda(d)}", 19, COR_LENTO),
+                          txt(f"registradores no comb: {d}", 19, WHITE),
+                          ).arrange(DOWN, aligned_edge=LEFT, buff=0.36).move_to(P(1.4, 0.5), aligned_edge=LEFT)
+
+        curva, zeros, painel = curva_de(1), zeros_de(1), painel_de(1)
+        leg = self.legenda("R continua 4: a taxa de saída é a mesma nos três casos — só o filtro muda", leg)
+        self.parametros(4, 1, 1)
+        self.play(Create(ax), FadeIn(marcas))
+        self.play(FadeIn(util), FadeIn(r_util), FadeIn(dobram), FadeIn(r_dobram), Create(nyq))
+        leg = self.legenda("Em verde o que queremos guardar; em vermelho o que vai dobrar por cima", leg)
+        self.wait(1.4)
+        self.play(Create(curva), FadeIn(zeros), FadeIn(painel), run_time=1.5)
+        leg = self.legenda("D = 1: um zero no centro de cada faixa vermelha — é o nosso exemplo", leg, COR_COMB)
+        self.wait(2.0)
+
+        leg = self.legenda("D = 2: o dobro de zeros, e o primeiro cai exatamente no tracejado", leg, COR_COMB)
+        self.parametros(4, 2, 1)
+        self.play(Transform(curva, curva_de(2)), Transform(zeros, zeros_de(2)),
+                  Transform(painel, painel_de(2)), run_time=1.8)
+        r_nyq = txt("Nyquist da saída", 16, COR_JANELA).next_to(marcas[2], DOWN, buff=0.14)
+        self.play(FadeIn(r_nyq), nyq.animate.set_stroke(width=5))
+        leg = self.legenda("É o limite natural: o zero pousa na borda do que a saída consegue representar",
+                           leg, COR_JANELA)
+        self.wait(2.2)
+
+        leg = self.legenda("D = 4: os zeros continuam andando para a esquerda — e invadem o verde", leg, COR_RUIDO)
+        self.parametros(4, 4, 1)
+        self.play(Transform(curva, curva_de(4)), Transform(zeros, zeros_de(4)),
+                  Transform(painel, painel_de(4)), run_time=1.8)
+        self.wait(2.4)
+        leg = self.legenda("O filtro passou a apagar o próprio sinal que deveria preservar", leg, COR_RUIDO)
+        self.wait(2.0)
+        self.play(FadeOut(VGroup(ax, marcas, util, r_util, dobram, r_dobram, nyq, r_nyq,
+                                 curva, zeros, painel)), run_time=0.8)
+
+        # --- C: o veredito ----------------------------------------------------
+        self.trocar_titulo(titulo, "12 · Por que D real é 1 ou 2")
+        col_x = [1.6, 3.5, 5.4]
+        lin_y = [1.95, 1.2, 0.45, -0.3, -1.05]
+        tab = VGroup()
+        for k, d in enumerate((1, 2, 4)):
+            tab.add(tex(rf"D = {d}", COR_COMB if d < 4 else COR_RUIDO, 30).move_to(P(col_x[k], lin_y[0])))
+        for c, (rot, vals) in enumerate([
+                ("janela equivalente R·D", ["4 amostras", "8 amostras", "16 amostras"]),
+                ("1º zero", ["f_s/4", "f_s/8", "f_s/16"]),
+                ("topo da banda útil", ["−0,9 dB", "−3,9 dB", "zero"]),
+                ("pior vazamento ao decimar", ["−9,9 dB", "−13,0 dB", "−20,1 dB"])], start=1):
+            tab.add(txt(rot, 19, GREY_B).move_to(P(0.5, lin_y[c]), aligned_edge=RIGHT))
+            for k, v in enumerate(vals):
+                cor = COR_RUIDO if (c == 3 and k == 2) else WHITE
+                tab.add(txt(v, 19, cor).move_to(P(col_x[k], lin_y[c])))
+
+        vereditos = VGroup(
+            txt("D = 2 põe o primeiro zero exatamente no Nyquist da saída: é o limite natural,\n"
+                "e compra 3 dB de rejeição a mais no que vai dobrar", 21, COR_JANELA, line_spacing=0.85),
+            txt("D = 4 rejeita ainda melhor, mas põe um zero dentro da banda útil —\n"
+                "por isso um CIC real usa D = 1 ou D = 2, e para rejeitar mais aumenta-se M", 21, COR_RUIDO,
+                line_spacing=0.85),
+        ).arrange(DOWN, buff=0.4).move_to(P(0, -2.4))
+
+        moldura_ex = RoundedRectangle(corner_radius=0.12, width=1.75, height=3.7, stroke_width=2,
+                                      color=COR_JANELA).move_to(P(col_x[0], 0.45))
+        r_ex = txt("o exemplo do vídeo", 17, COR_JANELA).move_to(P(col_x[0], 2.55))
+
+        leg = self.legenda("Lado a lado, com R = 4 fixo e a mesma banda útil", leg)
+        self.parametros(4, 1, 1)
+        self.play(FadeIn(tab), run_time=1.4)
+        self.wait(1.2)
+        leg = self.legenda("A primeira coluna é o CIC que o vídeo usou o tempo todo: janela R·D = 4",
+                           leg, COR_JANELA)
+        self.play(Create(moldura_ex), FadeIn(r_ex), run_time=1.0)
+        self.wait(1.8)
+        leg = self.legenda("Mais D é mais rejeição, pago em banda útil", leg)
+        self.play(FadeIn(vereditos[0], shift=UP * 0.15))
+        self.wait(2.0)
+        self.play(FadeIn(vereditos[1], shift=UP * 0.15))
+        self.wait(2.8)
+        self.limpar()
+
+    # ================================================================= CENA 13
+    def cena_estagios(self):
+        """O número de estágios M: o que é, o que faz com a janela, com |H(f)| e com o sinal."""
+        titulo = self.titulo_cena("13 · O número de estágios M")
+        self.parametros(4, 1, 1)
+
+        # --- A: um estágio é um CIC inteiro; M estágios é repeti-lo ----------
+        um = VGroup(tex(r"x[n]", COR_X, 26), tex(r"\rightarrow", GREY_A, 26),
+                    caixa("Integrador", 1.9, 0.6, COR_INT, 19), tex(r"\rightarrow", GREY_A, 26),
+                    caixa("Comb", 1.3, 0.6, COR_COMB, 19), tex(r"\rightarrow", GREY_A, 26),
+                    tex(r"y[n]", COR_COMB, 26)).arrange(RIGHT, buff=0.22).move_to(P(0, 2.15))
+        moldura = SurroundingRectangle(VGroup(um[2], um[4]), color=COR_JANELA, buff=0.18, corner_radius=0.1)
+        r_um = txt("um estágio = um integrador + um comb", 19, COR_JANELA).next_to(moldura, UP, buff=0.14)
+
+        casc = VGroup(tex(r"x[n]", COR_X, 24), tex(r"\rightarrow", GREY_A, 24),
+                      caixa("estágio 1", 1.75, 0.6, COR_JANELA, 18), tex(r"\rightarrow", GREY_A, 24),
+                      caixa("estágio 2", 1.75, 0.6, COR_JANELA, 18), tex(r"\rightarrow", GREY_A, 24),
+                      caixa("estágio 3", 1.75, 0.6, COR_JANELA, 18), tex(r"\rightarrow", GREY_A, 24),
+                      tex(r"y[n]", COR_COMB, 24)).arrange(RIGHT, buff=0.18).move_to(P(0, 0.6))
+        r_casc = txt("M estágios: a saída de um é a entrada do seguinte", 19).next_to(casc, DOWN, buff=0.2)
+        nota_n = txt("parte da literatura chama esse número de N — é o mesmo parâmetro", 18, GREY_B
+                     ).next_to(r_casc, DOWN, buff=0.14)
+
+        yh = -1.55
+        xs_i, xs_c = [-3.15, -2.25, -1.35], [0.95, 1.85, 2.75]
+        hog = VGroup(tex(r"x[n]", COR_X, 22).move_to(P(-4.2, yh)),
+                     *[caixa("I", 0.75, 0.58, COR_INT, 19).move_to(P(x, yh)) for x in xs_i],
+                     caixa_tex(r"\downarrow R", 0.85, 0.58, COR_DEC, 22).move_to(P(-0.2, yh)),
+                     *[caixa("C", 0.75, 0.58, COR_COMB, 19).move_to(P(x, yh)) for x in xs_c],
+                     tex(r"y[m]", COR_COMB, 22).move_to(P(3.85, yh)))
+        ch_i = BraceBetweenPoints(P(-3.55, yh - 0.36), P(-0.95, yh - 0.36), DOWN, color=COR_INT)
+        r_i = txt("M integradores", 16, COR_INT).next_to(ch_i, DOWN, buff=0.06)
+        ch_c = BraceBetweenPoints(P(0.55, yh - 0.36), P(3.15, yh - 0.36), DOWN, color=COR_COMB)
+        r_c = txt("M combs", 16, COR_COMB).next_to(ch_c, DOWN, buff=0.06)
+
+        leg = self.legenda("Tudo até aqui foi um CIC de um estágio só: M = 1")
+        self.play(FadeIn(um), run_time=1.0)
+        self.play(Create(moldura), FadeIn(r_um))
+        leg = self.legenda("Um CIC de verdade repete esse bloco: é o \"Cascaded\" do nome", leg, COR_JANELA)
+        self.play(FadeIn(casc, shift=DOWN * 0.15), run_time=1.2)
+        self.play(FadeIn(r_casc), FadeIn(nota_n))
+        self.wait(1.2)
+        leg = self.legenda("Como integrar e decimar comutam, os blocos iguais podem ser agrupados", leg)
+        self.play(FadeIn(hog, shift=UP * 0.15), run_time=1.2)
+        self.play(FadeIn(ch_i), FadeIn(r_i), FadeIn(ch_c), FadeIn(r_c))
+        leg = self.legenda("É o mesmo filtro, redesenhado: M integradores, o decimador, M combs", leg)
+        self.wait(2.0)
+        self.play(FadeOut(VGroup(um, moldura, r_um, casc, r_casc, nota_n, hog, ch_i, r_i, ch_c, r_c)),
+                  run_time=0.8)
+
+        # --- B: o que M faz com a janela -------------------------------------
+        self.trocar_titulo(titulo, "13 · O que M faz com a janela")
+        self.parametros(4, 1, "1, 2, 3")
+        h1 = np.array([1, 1, 1, 1])
+        janelas = [h1, np.convolve(h1, h1), np.convolve(np.convolve(h1, h1), h1)]
+        nomes = ["retangular", "triangular", "um sino"]
+        grupos, rotulos, pesos = VGroup(), VGroup(), VGroup()
+        for k, h in enumerate(janelas):
+            cx = -4.45 + 4.45 * k
+            a = Axes(x_range=[-0.5, 10.5, 2], y_range=[0, 0.3, 0.1], x_length=3.7, y_length=1.7,
+                     axis_config=EIXO_CFG).move_to(P(cx, 0.85))
+            g = VGroup(a, *[haste(a, n, v / h.sum(), COR_JANELA, 0.055, 3) for n, v in enumerate(h)])
+            grupos.add(g)
+            rotulos.add(VGroup(tex(rf"M = {k + 1}", COR_JANELA, 30),
+                               txt(nomes[k], 19)).arrange(DOWN, buff=0.12).move_to(P(cx, 2.3)))
+            pesos.add(VGroup(txt(" ".join(str(v) for v in h), 20, WHITE),
+                             txt(f"{len(h)} amostras", 17, GREY_B)
+                             ).arrange(DOWN, buff=0.12).move_to(P(cx, -0.5)))
+
+        conta = tex(r"h_M = h_1 * h_1 * \cdots * h_1 \quad (M \text{ vezes})", WHITE, 30).move_to(P(0, -1.55))
+        porque = txt("fazer a média das médias: as amostras do meio entram em várias janelas\n"
+                     "e passam a pesar mais que as das pontas", 21, GREY_B, line_spacing=0.85
+                     ).move_to(P(0, -2.45))
+
+        leg = self.legenda("Para ver o que M faz com o sinal, olhe a janela que o filtro aplica", leg)
+        self.play(FadeIn(grupos[0]), FadeIn(rotulos[0]), FadeIn(pesos[0]), run_time=1.2)
+        leg = self.legenda("Com um estágio a janela é plana: as 4 amostras pesam igual", leg, COR_JANELA)
+        self.wait(1.4)
+        leg = self.legenda("O segundo estágio filtra a saída do primeiro — e a janela deixa de ser plana", leg)
+        self.play(FadeIn(grupos[1]), FadeIn(rotulos[1]), FadeIn(pesos[1]), run_time=1.2)
+        self.play(Write(conta), run_time=1.2)
+        self.wait(1.2)
+        self.play(FadeIn(grupos[2]), FadeIn(rotulos[2]), FadeIn(pesos[2]), run_time=1.2)
+        leg = self.legenda("Com três, já é quase um sino: transição suave em vez de corte seco", leg, COR_JANELA)
+        self.play(FadeIn(porque, shift=UP * 0.15))
+        self.wait(1.8)
+        leg = self.legenda("E a janela fica mais longa: M·(R·D−1)+1 amostras, logo mais atraso", leg)
+        self.wait(1.8)
+        self.play(FadeOut(VGroup(grupos, rotulos, pesos, conta, porque)), run_time=0.8)
+
+        cores = [COR_COMB, COR_JANELA, COR_LENTO, COR_DEC]
+
+        # --- C: o gráfico da cena 8, agora com M = 4 --------------------------
+        self.trocar_titulo(titulo, "13 · O mesmo gráfico com M = 4")
+        self.parametros(4, 1, "1, 2, 4")
+        ax = Axes(x_range=[0, 0.5, 0.125], y_range=[0, 1.15, 0.25], x_length=6.1, y_length=3.0,
+                  axis_config=EIXO_CFG).move_to(P(-3.35, 0.55))
+        marcas = marcar_x(ax, [0, 0.125, 0.25, 0.375, 0.5], ["0", "f_s/8", "f_s/4", "3f_s/8", "f_s/2"], 14)
+        r_ax = rotulo_eixo(ax, txt("a janela continua R·D = 4 nos três; ganho normalizado para 1 em DC", 16))
+
+        def lin(f, m):
+            return (ganho(f, D) / D) ** m
+
+        F_LOB = 0.3660                                  # pico do lóbulo lateral de D = 4
+        ms = (1, 2, 4)
+        curvas = [ax.plot(lambda f, m=m: lin(f, m), x_range=[0.0006, 0.5, 0.0006],
+                          color=[COR_COMB, COR_JANELA, COR_DEC][k], stroke_width=4)
+                  for k, m in enumerate(ms)]
+        pontos = [Dot(ax.c2p(F_LOB, lin(F_LOB, m)), radius=0.07,
+                      color=[COR_COMB, COR_JANELA, COR_DEC][k]) for k, m in enumerate(ms)]
+        vert = DashedLine(ax.c2p(F_LOB, 0), ax.c2p(F_LOB, lin(F_LOB, 1) + 0.12), color=GREY_B,
+                          stroke_width=1.5, dash_length=0.07)
+        zeros = VGroup(Dot(ax.c2p(0.25, 0), radius=0.075, color=COR_RUIDO),
+                       Dot(ax.c2p(0.5, 0), radius=0.075, color=COR_RUIDO))
+        r_zeros = txt("os zeros não se movem:\nquem os posiciona é D", 15, COR_RUIDO, line_spacing=0.75
+                      ).move_to(ax.c2p(0.30, 0.62))
+
+        def num(v, casas):
+            return f"{v:.{casas}f}".replace(".", ",")
+
+        def dbn(v):
+            return f"{20 * np.log10(v):.0f}".replace("-", "−")
+
+        col_x = [3.95, 5.15, 6.35]
+        lin_y = [2.0, 1.25, 0.6, -0.05, -0.7]
+        cores_m = [COR_COMB, COR_JANELA, COR_DEC]
+        cabs = VGroup(*[tex(rf"M = {m}", cores_m[k], 30).move_to(P(col_x[k], lin_y[0]))
+                        for k, m in enumerate(ms)])
+        linhas = [
+            ("pico do lóbulo lateral", [num(lin(F_LOB, m), 4 if m > 2 else 3) for m in ms], COR_RUIDO),
+            ("o mesmo em dB", [dbn(lin(F_LOB, m)) for m in ms], COR_RUIDO),
+            ("ganho em f_s/16", [num(lin(0.0625, m), 2) for m in ms], COR_LENTO),
+            ("ordem dos zeros", [str(m) for m in ms], WHITE),
+        ]
+        rot_linhas, colunas = VGroup(), [VGroup(), VGroup(), VGroup()]
+        for c, (rot, vals, cor) in enumerate(linhas, start=1):
+            rot_linhas.add(txt(rot, 17, GREY_B).move_to(P(3.3, lin_y[c]), aligned_edge=RIGHT))
+            for k, v in enumerate(vals):
+                colunas[k].add(txt(v, 18, cor).move_to(P(col_x[k], lin_y[c])))
+
+        elevar = tex(r"|H(f)|^M", WHITE, 32).move_to(P(4.9, -1.6))
+        r_elevar = txt("os estágios são iguais, então\nas respostas se multiplicam", 17, GREY_B,
+                       line_spacing=0.8).move_to(P(4.9, -2.4))
+
+        leg = self.legenda("É o mesmo gráfico de |H(f)| de antes, normalizado para valer 1 em DC", leg)
+        self.play(Create(ax), FadeIn(marcas), FadeIn(r_ax))
+        self.play(Create(curvas[0]), FadeIn(cabs[0]), run_time=1.3)
+        self.play(FadeIn(vert), FadeIn(pontos[0]), FadeIn(colunas[0]), FadeIn(rot_linhas), run_time=0.9)
+        leg = self.legenda("Com M = 1: zeros em f_s/4 e f_s/2, e o lóbulo lateral valendo 0,27", leg, COR_COMB)
+        self.wait(1.8)
+        leg = self.legenda("Com M estágios iguais em cascata, a curva inteira é elevada a M", leg)
+        self.play(Write(elevar), FadeIn(r_elevar), run_time=1.2)
+        self.wait(1.4)
+
+        for k in (1, 2):
+            leg = self.legenda(f"M = {ms[k]}: a curva toda abaixa, porque 0,27 elevado a {ms[k]} é bem menor",
+                               leg, cores_m[k])
+            self.play(Create(curvas[k]), run_time=1.2)
+            self.play(FadeIn(pontos[k]), FadeIn(cabs[k]), FadeIn(colunas[k]), run_time=0.7)
+            self.wait(1.3)
+
+        leg = self.legenda("Os zeros ficam onde estavam: quem os posiciona é D, não M", leg, COR_RUIDO)
+        self.play(FadeIn(zeros), FadeIn(r_zeros), run_time=0.9)
+        self.wait(1.6)
+        leg = self.legenda("O que muda neles é a ordem: a curva passa a encostar no eixo e ficar rente a ele",
+                           leg, COR_RUIDO)
+        self.wait(1.8)
+        leg = self.legenda("E o lóbulo lateral, que era 0,27, praticamente desaparece: 0,0055 com M = 4",
+                           leg, COR_DEC)
+        self.wait(1.8)
+        leg = self.legenda("O preço está na banda útil: em f_s/16 o ganho cai de 0,91 para 0,67", leg, COR_LENTO)
+        self.wait(1.8)
+        leg = self.legenda("Na escala linear o lóbulo de M = 4 já não se vê — então vamos para dB", leg)
+        self.wait(1.6)
+        self.play(FadeOut(VGroup(ax, marcas, r_ax, *curvas, *pontos, vert, zeros, r_zeros,
+                                 cabs, rot_linhas, *colunas, elevar, r_elevar)), run_time=0.8)
+
+        # --- D: o mesmo em dB, de M = 1 a 4 -----------------------------------
+        self.trocar_titulo(titulo, "13 · Em dB: o lóbulo cai 11 dB por estágio")
+        self.parametros(4, 1, "1 a 4")
+        ax = Axes(x_range=[0, 0.5, 0.125], y_range=[-80, 5, 20], x_length=6.5, y_length=3.0,
+                  axis_config=EIXO_CFG).move_to(P(-3.25, 0.15))
+        marcas = marcar_x(ax, [0, 0.125, 0.25, 0.375, 0.5], ["0", "f_s/8", "f_s/4", "3f_s/8", "f_s/2"], 14)
         marcas_y = VGroup(*[txt(t, 14, COR_EIXO).next_to(ax.c2p(0, v), LEFT, buff=0.12)
                             for v, t in [(0, "0 dB"), (-20, "−20"), (-40, "−40"), (-60, "−60"), (-80, "−80")]])
-        r_ax = rotulo_eixo(ax, txt("agora em dB: os lóbulos são pequenos demais para a escala linear", 17))
-        cores = [COR_COMB, COR_JANELA, COR_LENTO]
+        r_ax = rotulo_eixo(ax, txt("em decibéis: a mesma curva, com os lóbulos visíveis", 16))
         curvas = [ax.plot(lambda f, k=k: ganho_db(f, D, k + 1), x_range=[0.0008, 0.5, 0.0012],
-                          color=cores[k], stroke_width=3.5) for k in range(3)]
-        itens = [txt("N = 1: lóbulo em −11 dB\nbanda útil quase reta", 18, cores[0], line_spacing=0.8),
-                 txt("N = 2: lóbulo em −23 dB\no dobro de rejeição", 18, cores[1], line_spacing=0.8),
-                 txt("N = 3: lóbulo em −34 dB\nmas a banda útil afunda", 18, cores[2], line_spacing=0.8)]
-        VGroup(*itens).arrange(DOWN, aligned_edge=LEFT, buff=0.55).move_to(P(2.1, -1.0), aligned_edge=LEFT)
-        final = txt("o FIR que vem depois corrige essa inclinação (droop)", 19).move_to(P(2.1, -2.9))
+                          color=cores[k], stroke_width=3.5) for k in range(4)]
 
-        leg = self.legenda("Um CIC de verdade quase nunca tem um estágio só")
-        self.play(FadeIn(blocos), run_time=1.2)
-        self.play(FadeIn(ch_i), FadeIn(r_i), FadeIn(ch_c), FadeIn(r_c))
-        leg = self.legenda("N integradores antes do decimador e N combs depois: daí o \"Cascaded\"", leg)
-        self.wait(1.4)
-        leg = self.legenda("Cada estágio multiplica a resposta: o gráfico vira |H(f)| elevado a N", leg, COR_COMB)
+        lin_y = [1.45, 0.72, -0.01, -0.74, -1.47]
+        tab = VGroup()
+        for c, (rot, vals) in enumerate([("", ["M = 1", "M = 2", "M = 3", "M = 4"]),
+                                         ("lóbulo lateral", ["−11", "−23", "−34", "−45"]),
+                                         ("droop em f_s/8", ["−3,7", "−7,4", "−11,1", "−14,8"]),
+                                         ("atraso (amostras)", ["1,5", "3,0", "4,5", "6,0"]),
+                                         ("bits a mais", ["+2", "+4", "+6", "+8"])]):
+            if rot:
+                tab.add(txt(rot, 16, GREY_B).move_to(P(2.45, lin_y[c]), aligned_edge=RIGHT))
+            for k, v in enumerate(vals):
+                tab.add(txt(v, 17, cores[k] if c == 0 else WHITE).move_to(P(3.3 + 0.95 * k, lin_y[c])))
+        unidade = txt("lóbulo e droop em dB", 15, GREY_B).move_to(P(4.1, -2.1))
+
+        leg = self.legenda("A mesma multiplicação, vista em dB, vira uma soma: M vezes a curva de um estágio",
+                           leg)
         self.play(Create(ax), FadeIn(marcas), FadeIn(marcas_y), FadeIn(r_ax))
-        for k in range(3):
-            self.play(Create(curvas[k]), FadeIn(itens[k], shift=RIGHT * 0.2), run_time=1.4)
-            self.wait(1.2)
-        leg = self.legenda("Mais estágios rejeitam muito melhor o que iria dobrar sobre o sinal", leg, COR_LENTO)
+        self.play(FadeIn(VGroup(*tab[:4])))
+        for k in range(4):
+            self.play(Create(curvas[k]), run_time=1.1)
+            self.play(FadeIn(VGroup(*[m for m in tab[4:] if abs(m.get_center()[0] - (3.3 + 0.95 * k)) < 0.4])),
+                      run_time=0.5)
+            self.wait(0.9)
+        self.play(FadeIn(VGroup(*[m for m in tab[4:] if m.get_center()[0] < 2.6])), FadeIn(unidade))
+        leg = self.legenda("Para baixo é ótimo: o lóbulo cai ~11 dB por estágio", leg, COR_LENTO)
         self.wait(1.6)
-        leg = self.legenda("O preço é a banda útil cair mais perto de DC", leg)
-        self.play(FadeIn(final, shift=UP * 0.15))
-        self.wait(2.2)
+        leg = self.legenda("Mas a banda útil afunda junto: o droop também multiplica", leg, COR_RUIDO)
+        self.wait(1.8)
+        leg = self.legenda("E cada estágio cobra atraso e registrador mais largo: log₂(R·D) bits a mais", leg)
+        self.wait(1.8)
+        self.play(FadeOut(VGroup(ax, marcas, marcas_y, r_ax, *curvas, tab, unidade)), run_time=0.8)
+
+        # --- E: o mesmo sinal com M = 1, 2, 3 e 4 -----------------------------
+        self.trocar_titulo(titulo, "13 · O mesmo sinal com 1, 2, 3 e 4 estágios")
+        rng = np.random.default_rng(11)
+        nmax = 160
+        n = np.arange(nmax)
+        x = np.sin(TAU * n / 40) + 0.5 * rng.standard_normal(nmax)
+
+        def cascata(dados, k, d=D):
+            y = np.asarray(dados, dtype=float)
+            for _ in range(k):
+                y = media_movel(y, d) / d
+            return y
+
+        # desvio do ruído na saída, exato: a entrada tem sigma 0,5 e um filtro de
+        # janela w multiplica o desvio de um ruído branco por sqrt(soma de w ao quadrado)
+        h1, hm, sigmas = np.ones(D), np.ones(D), []
+        for _ in range(4):
+            w = hm / hm.sum()
+            sigmas.append(0.5 * float(np.sqrt((w ** 2).sum())))
+            hm = np.convolve(hm, h1)
+
+        ys = [2.5, 1.4, 0.3, -0.8, -1.9]
+
+        def linha(yc, dados, cor, largura=2):
+            a = eixos_tempo(P(-1.9, yc), 8.2, 0.85, [0, nmax, 40], [-2.3, 2.3, 2])
+            c = VMobject().set_points_as_corners([a.c2p(k, v) for k, v in zip(n, dados)])
+            return VGroup(a, c.set_stroke(cor, largura))
+
+        grupos = [linha(ys[0], x, COR_X)]
+        rotulos = [txt("entrada\nruidosa", 16, COR_X, line_spacing=0.75
+                       ).move_to(P(2.9, ys[0]), aligned_edge=LEFT)]
+        for k in range(4):
+            grupos.append(linha(ys[k + 1], cascata(x, k + 1), cores[k]))
+            rotulos.append(txt(f"M = {k + 1}\nσ do ruído = {sigmas[k]:.2f}".replace(".", ","),
+                               16, cores[k], line_spacing=0.75).move_to(P(2.9, ys[k + 1]), aligned_edge=LEFT))
+
+        leg = self.legenda("A mesma entrada passando por 1, 2, 3 e 4 estágios, com a janela R·D = 4", leg)
+        self.play(Create(grupos[0][0]), FadeIn(rotulos[0]))
+        self.play(Create(grupos[0][1]), run_time=1.4)
+        for k, texto in enumerate([
+                "M = 1: o ruído já cai pela metade",
+                "M = 2: mais liso — mas repare que a onda começou a atrasar",
+                "M = 3: o ganho em suavidade é bem menor que do primeiro para o segundo",
+                "M = 4: quase idêntico ao M = 3, e já com 6 amostras de atraso"]):
+            leg = self.legenda(texto, leg, cores[k])
+            self.play(FadeIn(grupos[k + 1], shift=UP * 0.1), FadeIn(rotulos[k + 1]), run_time=1.2)
+            self.wait(1.5)
+
+        fecho = txt("de 1 para 4 estágios o ruído cai só de 0,25 para 0,18 — o ganho de verdade\n"
+                    "está no que o lóbulo rejeita, e isso só aparece na hora de decimar",
+                    21, COR_LENTO, line_spacing=0.85).move_to(P(0, -3.0))
+        leg = self.legenda("Então por que usar mais estágios, se o sinal mal fica mais liso?", leg)
+        self.wait(1.4)
+        self.play(FadeIn(fecho, shift=UP * 0.15))
+        self.wait(2.6)
         self.limpar()
 
     # ================================================================== RESUMO
     def cena_resumo(self):
         self.titulo_cena("Resumo")
+        self.parametros()
         # cor só nos nomes dos blocos, no mesmo código de cores usado nas cenas
         itens = VGroup(*[Text(t, font_size=21, color=WHITE, t2c=c) for t, c in [
+            ("• Três parâmetros: R (decimação), D (atraso do comb) e M (estágios) — a janela é R·D", {}),
             ("• No diagrama: Σ soma, z⁻¹ guarda uma amostra, o nó copia o valor", {}),
             ("• Integrador: tem realimentação, soma tudo — I[n] = I[n−1] + x[n]", {"Integrador": COR_INT}),
-            ("• Comb: só para frente, y[n] = I[n] − I[n−D]; z⁻ᴰ são D registradores em fila", {"Comb": COR_COMB}),
-            ("• Juntos: a soma de uma janela de D amostras — uma média móvel sem multiplicador",
-             {"janela de D amostras": COR_JANELA}),
-            ("• |H(f)| = |sin(πDf/f_s) / sin(πf/f_s)|: ganho D em DC, zeros em múltiplos de f_s/D", {}),
-            ("• D maior: mais suave e mais lento, com droop na banda útil (gráfico mais estreito)", {}),
-            ("• Os zeros caem onde o espectro dobra ao decimar por D: anti-aliasing sob medida", {}),
-            ("• Decimador entre integrador e comb: o comb roda a f_s/D com z⁻¹ só", {"Decimador": COR_DEC}),
-            ("• N estágios melhoram a rejeição; o FIR seguinte limpa o resto e corrige o droop", {}),
-        ]]).arrange(DOWN, aligned_edge=LEFT, buff=0.3).move_to(P(0, -0.2))
+            ("• Comb: só para frente, y[n] = I[n] − I[n−D]; z⁻ᴰ são D registradores em fila",
+             {"Comb": COR_COMB}),
+            ("• Juntos: a soma de uma janela de R·D amostras — uma média móvel sem multiplicador",
+             {"janela de R·D amostras": COR_JANELA}),
+            ("• |H(f)| = |sin(πR·Df/f_s) / sin(πf/f_s)|: ganho R·D em DC, zeros em múltiplos de f_s/(R·D)", {}),
+            ("• Janela maior: mais suave e mais lenta, com droop na banda útil (gráfico mais estreito)", {}),
+            ("• Os zeros caem onde o espectro dobra ao decimar por R: anti-aliasing sob medida", {}),
+            ("• Decimador entre integrador e comb: o comb roda a f_s/R com z⁻¹, ou seja D = 1",
+             {"Decimador": COR_DEC}),
+            ("• M estágios: a janela vira um sino; −11 dB de lóbulo por estágio, e droop igual", {}),
+        ]]).arrange(DOWN, aligned_edge=LEFT, buff=0.28).move_to(P(0, -0.25))
         self.play(LaggedStart(*[FadeIn(t, shift=RIGHT * 0.2) for t in itens], lag_ratio=0.3), run_time=4.5)
         self.wait(4)
         self.limpar()
