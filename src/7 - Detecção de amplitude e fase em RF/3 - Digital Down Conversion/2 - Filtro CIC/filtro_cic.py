@@ -1204,39 +1204,41 @@ class FiltroCIC(Scene):
                         tex(r"y[m]", COR_COMB, 24)).arrange(RIGHT, buff=0.2).move_to(P(0, 2.15))
         realce = SurroundingRectangle(cadeia[6], color=COR_COMB, buff=0.1, corner_radius=0.1)
         nota_d = txt("o comb da taxa lenta ficou com um registrador só, ou seja D = 1 — "
-                     "mas ele pode ter z⁻ᴰ", 21).move_to(P(0, 1.25))
+                     "mas ele pode ter z⁻ᴰ", 22).move_to(P(0, 1.15))
         relacao = tex_partes([(r"\text{janela no tempo rápido} = ", WHITE), (r"R", COR_DEC),
                               (r"\cdot", WHITE), (r"D", COR_COMB), (r"\text{ amostras}", WHITE)], 34
-                             ).move_to(P(0, 0.4))
-        ate_aqui = txt("a janela do nosso exemplo é 4 desde o começo: antes com R = 1 e D = 4,\n"
-                       "agora com R = 4 e D = 1 — nos dois casos R·D = 4", 21, COR_JANELA,
-                       line_spacing=0.85).move_to(P(0, -0.45))
+                             ).move_to(P(0, 1.0))
 
-        letras = VGroup()
-        for k, (sig, nome, oque) in enumerate([
-                ("R", "fator de decimação", "quantas amostras se descarta"),
-                ("D", "atraso diferencial do comb", "quantos registradores o comb tem"),
-                ("M", "número de estágios", "quantas vezes o filtro é repetido")]):
-            y = -1.25 - 0.55 * k
-            cor = [COR_DEC, COR_COMB, COR_JANELA][k]
-            letras.add(tex(sig, cor, 30).move_to(P(-5.4, y)))
-            letras.add(txt(nome, 20, cor).move_to(P(-4.9, y), aligned_edge=LEFT))
-            letras.add(txt(oque, 19, GREY_B).move_to(P(0.6, y), aligned_edge=LEFT))
-        r_letras = txt("os três parâmetros de um CIC", 19).move_to(P(-3.3, -0.95))
+        # a mesma janela de 4, obtida de dois jeitos: é o que fecha a ideia
+        col_x, lin_y = [0.1, 1.5, 3.2], [0.0, -0.7, -1.4]
+        tabela = VGroup(Line(P(-3.5, -0.35), P(3.9, -0.35), color=COR_EIXO, stroke_width=1.5))
+        for k, (sig, cor) in enumerate([("R", COR_DEC), ("D", COR_COMB), (r"R \cdot D", COR_JANELA)]):
+            tabela.add(tex(sig, cor, 32).move_to(P(col_x[k], lin_y[0])))
+        for j, (rot, vr, vd) in enumerate([("sem decimar", 1, 4), ("decimando por 4", 4, 1)], start=1):
+            tabela.add(txt(rot, 21, GREY_B).move_to(P(-0.9, lin_y[j]), aligned_edge=RIGHT))
+            for k, (v, cor) in enumerate([(vr, COR_DEC), (vd, COR_COMB), (vr * vd, COR_JANELA)]):
+                tabela.add(tex(str(v), cor, 30).move_to(P(col_x[k], lin_y[j])))
+        nota_tab = txt("a mesma janela de 4 amostras, vinda de dois lugares diferentes", 21, COR_JANELA
+                       ).next_to(tabela, DOWN, buff=0.45)
+        bloco = VGroup(tabela, nota_tab).move_to(P(0, -1.25))
 
         leg = self.legenda("Dos três parâmetros, o D é o único que ainda não mexemos")
         self.play(FadeIn(cadeia), run_time=1.2)
         self.play(Create(realce), FadeIn(nota_d))
-        leg = self.legenda("D é o atraso diferencial: quantos registradores o comb tem na taxa lenta", leg, COR_COMB)
-        self.wait(1.4)
+        leg = self.legenda("D é o atraso diferencial: quantos registradores o comb tem na taxa lenta",
+                           leg, COR_COMB)
+        self.wait(2.0)
         leg = self.legenda("E como cada passo lento vale R rápidos, a janela equivalente é R·D", leg)
+        self.play(FadeOut(nota_d, shift=UP * 0.2), run_time=0.5)
         self.play(Write(relacao), run_time=1.3)
-        self.play(FadeIn(ate_aqui, shift=UP * 0.15))
         self.wait(1.6)
-        leg = self.legenda("São três letras, e cada uma mexe em uma coisa diferente", leg)
-        self.play(FadeIn(r_letras), FadeIn(letras, shift=UP * 0.1), run_time=1.3)
+        leg = self.legenda("A janela do nosso exemplo é 4 desde o começo: só mudou de onde ela vem",
+                           leg, COR_JANELA)
+        self.play(FadeIn(tabela, shift=UP * 0.15), run_time=1.0)
+        self.wait(1.2)
+        self.play(FadeIn(nota_tab, shift=UP * 0.15), run_time=0.8)
         self.wait(2.2)
-        self.play(FadeOut(VGroup(cadeia, realce, nota_d, relacao, ate_aqui, letras, r_letras)), run_time=0.8)
+        self.play(FadeOut(VGroup(cadeia, realce, relacao, bloco)), run_time=0.8)
 
         # --- B: o que D faz com o gráfico, com R fixo ------------------------
         self.trocar_titulo(titulo, "12 · O que D faz com o gráfico")
